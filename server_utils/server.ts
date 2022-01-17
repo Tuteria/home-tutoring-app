@@ -3,8 +3,12 @@ import {
   getIELTSProducts,
   updateIELTSUserRecord,
   getCouponCode,
-  buildCart
+  buildCart,
+  getLocationInfoFromSheet,
+  fetchAllCountries,
 } from "@tuteria/tuteria-data/src";
+import { fetchGeneratedIpLocation } from "@tuteria/shared-lib/src/new-request-flow/components/LocationSelector/hook"
+
 import { verifyPaymentFromPaystack } from "./util";
 
 export const IS_DEVELOPMENT = process.env.IS_DEVELOPMENT || "development";
@@ -251,6 +255,22 @@ const serverAdapter = {
     }
     return result;
   },
+
+  getCountries: fetchAllCountries,
+  getRegions: async () => {
+    let { regions } = await getLocationInfoFromSheet();
+    return regions;
+  },
+  async getIpFromRequest(req) {
+    let client_ip = undefined;
+    if (req) {
+      client_ip = req.headers["x-forwarded-for"] || "";
+      client_ip = client_ip.split(",")[0];
+    }
+    let ipLocations = {};
+    ipLocations = await fetchGeneratedIpLocation(client_ip);
+    return ipLocations;
+  }
 };
 
 export default serverAdapter;

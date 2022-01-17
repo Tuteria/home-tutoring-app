@@ -2,6 +2,8 @@ import storage from "@tuteria/shared-lib/src/local-storage";
 
 let key = "IELTS_STORE";
 let userId = "IELTS_EXISTING_USER";
+const REGION_KEY = "TEST-REGIONS-VICINITIES";
+const COUNTRY_KEY = "TEST-COUNTRIES";
 
 async function postFetcher(url, data = {}) {
   let headers: any = {
@@ -16,6 +18,8 @@ async function postFetcher(url, data = {}) {
 }
 
 const clientAdapter = {
+  regionKey: REGION_KEY,
+  countryKey: COUNTRY_KEY,
   loadCart() {
     let result = storage.get(key, []) || [];
     return result;
@@ -91,7 +95,7 @@ const clientAdapter = {
     });
     let response = await postFetcher("/api/update-user-info", {
       id,
-      data:result,
+      data: result,
     });
     if (response.ok) {
       let data = await response.json();
@@ -107,6 +111,21 @@ const clientAdapter = {
     }
     throw "Error verifying coupon";
   },
+  createIssuedRequest(data) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({});
+      }, 300);
+    });
+  },
+  async getIpFromRequest() {
+    let response = await fetch("/api/get-ip");
+    if (response.status < 400) {
+      let data = await response.json();
+      return data.data;
+    }
+    throw "Could not fetch IP"
+  }
 };
 
 export default clientAdapter;

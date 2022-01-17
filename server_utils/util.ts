@@ -74,3 +74,29 @@ export function getQueryValues(): {[key: string]: string} {
   }
   return {};
 }
+
+export function useToastHelper() {
+  const toast = useToast();
+
+  function showSuccessToast({ title, description }) {
+    toast({
+      position: "bottom",
+      title,
+      description,
+      status: "success",
+      duration: 9000,
+      isClosable: true
+    });
+  }
+  function showErrorToast({ description }) {
+    toast({
+      position: "bottom",
+      title: "Error",
+      description,
+      status: "error",
+      duration: 9000,
+      isClosable: true
+    });
+  }
+  return { showSuccessToast, showErrorToast };
+}
