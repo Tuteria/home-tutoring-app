@@ -360,6 +360,30 @@ const serverAdapter = {
     let result = await fetchAcademicData();
     return parceAcademicData(result);
   },
+  getBookingInfo: async (slug, is_test = false) => {
+    let [academicDataWithStateInfo, requestInfo] = await Promise.all([
+      getAcademicDataWithRadiusInfo(),
+      getNewRequestDetail(slug),
+    ]);
+    let tutorsData = await getTutorsData(
+      slug,
+      requestInfo.requestData,
+      academicDataWithStateInfo
+    );
+    let tutors = requestInfo.paymentInfo.lessonPayments.map((o) => o.tutor);
+    return {
+      tutorsData: tutorsData.filter(Boolean).map((o, i) => ({
+        ...o,
+        subject: { ...o.subject, ...tutors[i].subject },
+      })),
+      requestData: { slug, ...requestInfo.requestData },
+      paymentInfo: { tutors, ...requestInfo.paymentInfo, slug },
+      status: requestInfo.status,
+      agent: requestInfo.agent,
+      created: requestInfo.created,
+      modified: requestInfo.modified,
+    };
+  },
 };
 
 export default serverAdapter;

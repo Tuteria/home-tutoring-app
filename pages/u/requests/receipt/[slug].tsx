@@ -1,9 +1,9 @@
-import Receipts from "@tuteria/shared-lib/src/components/payments/Receipts";
-import { RequestFlowStore } from "@tuteria/shared-lib/src/external-pages/request-flow/store";
+import Receipts from "@tuteria/shared-lib/src/new-request-flow/pages/Receipts";
+import { RequestFlowStore } from "@tuteria/shared-lib/src/home-tutoring/request-flow/store";
 import { observer } from "mobx-react-lite";
 import React, { useEffect } from "react";
-import { adapter } from "../../../../server_utils/requests";
-import { serverAdapter } from "../../../../server_utils/requests/server";
+import adapter from "../../../../server_utils/client";
+import serverAdapter from "../../../../server_utils/server";
 
 const bookingStore = RequestFlowStore.create({}, { adapter });
 
