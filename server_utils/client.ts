@@ -1,10 +1,9 @@
 import storage from "@tuteria/shared-lib/src/local-storage";
+import sStorage from "@tuteria/shared-lib/src/storage";
 
-let key = "IELTS_STORE";
-let userId = "IELTS_EXISTING_USER";
 const REGION_KEY = "TEST-REGIONS-VICINITIES";
 const COUNTRY_KEY = "TEST-COUNTRIES";
-
+const REQUEST_KEY = "TEST-HOME-TUTORING-REQUEST";
 async function postFetcher(url, data = {}) {
   let headers: any = {
     "Content-Type": "application/json",
@@ -20,34 +19,7 @@ async function postFetcher(url, data = {}) {
 const clientAdapter = {
   regionKey: REGION_KEY,
   countryKey: COUNTRY_KEY,
-  loadCart() {
-    let result = storage.get(key, []) || [];
-    return result;
-  },
-  loadUserId() {
-    return storage.get(userId, null) || null;
-  },
-
-  saveUserInfo: async (userInfo, cartData, amount) => {
-    let response = await postFetcher("/api/save-user-info", {
-      userInfo,
-      cartItems: cartData,
-      amount,
-    });
-    if (response.ok) {
-      let data = await response.json();
-      storage.set(userId, data.data.id);
-      return data.data.id;
-    }
-    throw "Error saving userInfo";
-  },
-  updateCartItems: (cartItems) => {
-    if (cartItems.length === 0) {
-      storage.clear(key);
-    } else {
-      storage.set(key, cartItems);
-    }
-  },
+  requestKey: REQUEST_KEY,
   async generateInvoice(
     amountToBePaid: number,
     { cartitems, currency, id }: any
@@ -69,21 +41,6 @@ const clientAdapter = {
       return data.data.data;
     }
     throw "Error generating invoice";
-  },
-  async verifyPayment(url, clientId, amount) {
-    let response = await postFetcher("/api/verify-payment", {
-      url,
-      id: clientId,
-      amount,
-    });
-    if (response.ok) {
-      let data = await response.json();
-      //clear all sessionStorage
-      storage.clear(userId);
-      storage.clear(key);
-      return data.data;
-    }
-    throw "Error verifying payment";
   },
   async updateUserInfo(id: number, data, amountToBePaid) {
     let result = {
@@ -124,8 +81,21 @@ const clientAdapter = {
       let data = await response.json();
       return data.data;
     }
-    throw "Could not fetch IP"
-  }
+    throw "Could not fetch IP";
+  },
+  updateStaticData({ regions, countries, requestInfo = {} }) {
+    storage.set(clientAdapter.regionKey, regions);
+    storage.set(clientAdapter.countryKey, countries);
+    let existing = sStorage.get(clientAdapter.requestKey, {});
+    storage.set(clientAdapter.requestKey, {
+      ...existing,
+      ...requestInfo,
+    });
+  },
+  initializeLandingPage({ regions, countries }) {
+    storage.set(clientAdapter.regionKey, regions);
+    storage.set(clientAdapter.countryKey, countries);
+  },
 };
 
 export default clientAdapter;

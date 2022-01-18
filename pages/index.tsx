@@ -1,12 +1,10 @@
 import { OverlayRouter } from "@tuteria/shared-lib/src/components/OverlayRouter";
-import { LocationFieldStore } from "@tuteria/shared-lib/src/stores/location";
-import storage from "@tuteria/shared-lib/src/local-storage";
-import sessionS from "@tuteria/shared-lib/src/storage";
 import LandingPage from "@tuteria/shared-lib/src/new-request-flow/pages/LandingPage";
+import { LocationFieldStore } from "@tuteria/shared-lib/src/stores/location";
 import React from "react";
-import { useToastHelper } from "../server_utils/util";
-import adapter  from "../server_utils/client";
+import adapter from "../server_utils/client";
 import serverAdapter from "../server_utils/server";
+import { useToastHelper } from "../server_utils/util";
 
 const store = LocationFieldStore.create({}, { adapter });
 
@@ -32,8 +30,7 @@ const Home = ({ regions, countries }) => {
   const { showErrorToast } = useToastHelper();
   const ipInfo = useFetchRegion();
   React.useEffect(() => {
-    storage.set(adapter.regionKey, regions);
-    storage.set(adapter.countryKey, countries);
+    adapter.initializeLandingPage({ regions, countries });
     store.updateFields({
       countries,
       regions,
