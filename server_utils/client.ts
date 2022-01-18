@@ -64,7 +64,7 @@ function decodedToken(existingTokenFromUrl, key = "tutorToken") {
   }
 }
 
-export const useAuhenticationWrapper = ({ store, base = "/hometutors" }) => {
+export const useAuhenticationWrapper = ({ store, base = "" }) => {
   let { router, navigate } = usePrefetchHook({
     routes: ["/request", "/checkout/[slug]", "/search/[slug]"],
     base,
@@ -164,7 +164,7 @@ const clientAdapter = {
     });
     if (result.status < 400) {
       let o = await result.json();
-      return o;
+      return o.data;
     }
   },
   async getIpFromRequest() {

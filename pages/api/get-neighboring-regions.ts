@@ -1,18 +1,8 @@
-import { NextApiRequest, NextApiResponse } from 'next'
+import { defaultView } from "../../middleware";
 import { getNeighboringArea } from "../../server_utils/hostService";
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
-  if (req.method == "GET") {
-    let data = await getNeighboringArea(req.query.region);
-    try {
-      res.status(200).json({
-        status: true,
-        data
-      });
-    } catch (error) {
-      res.status(400).json({ error });
-    }
-  } else {
-    res.status(405).json({ msg: "Not Allowed Method" });
-  }
-};
+export default defaultView(async (req) => {
+  const data = await getNeighboringArea(req.query.region);
+  return data;
+}, { method: 'GET' });
+
