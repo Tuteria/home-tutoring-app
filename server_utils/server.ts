@@ -8,10 +8,17 @@ import {
   fetchAllCountries,
   fetchAcademicData,
   parceAcademicData,
+  fetchTutorCourseData,
 } from "@tuteria/tuteria-data/src";
 import { fetchGeneratedIpLocation } from "@tuteria/shared-lib/src/new-request-flow/components/LocationSelector/hook";
 
 import { verifyPaymentFromPaystack } from "./util";
+import { getNewRequestDetail, getSelectedTutorSearchData } from "./hostService";
+import {
+  convertServerResultToRequestCompatibleFormat,
+  createSearchFilter,
+  getTuteriaSearchSubject,
+} from "./utils";
 
 export const IS_DEVELOPMENT = process.env.IS_DEVELOPMENT || "development";
 export let DEV = IS_DEVELOPMENT === "development";
@@ -194,11 +201,81 @@ export async function generatePaymentJson(paymentRequest) {
     return result;
   }
 }
+
+async function getTutorsData(
+  request_slug,
+  requestData,
+  academicDataWithStateInfo
+) {
+  let { rawAcademicData, state_with_radius } = academicDataWithStateInfo;
+  let _searchFilters = requestData.splitRequests.map((o, i) => {
+    let searchData = createSearchFilter(requestData, i);
+    let tuteriaSearchSubject = getTuteriaSearchSubject(
+      searchData.searchSubject,
+      rawAcademicData
+    );
+    let searchParam = {
+      tutors: [o.tutorId],
+      radius: 10,
+      country: searchData.country,
+      search_subject: tuteriaSearchSubject.name,
+    };
+    let found_state = state_with_radius.find(
+      (o) => o.state === searchData.state
+    );
+    if (found_state) {
+      searchParam.radius = found_state.radius;
+    }
+    return getSelectedTutorSearchData(searchParam, request_slug).then(
+      (result) => {
+        return convertServerResultToRequestCompatibleFormat(
+          result,
+          rawAcademicData,
+          searchData.searchSubject
+        );
+      }
+    );
+  });
+  let result = await Promise.all(_searchFilters);
+  let response = result.flat();
+  let requestInfo = await getNewRequestDetail(request_slug);
+  let r = response.map((o) => {
+    let tutor_response = requestInfo.tutor_responses.find(
+      (x) => x.tutor_slug == o.userId
+    );
+    if (
+      tutor_response?.status == "declined" ||
+      tutor_response?.status == "no_response"
+    ) {
+      return undefined;
+    }
+    return o;
+  });
+  return r;
+}
+
+async function getAcademicDataWithRadiusInfo() {
+  let [rawAcademicData, { state_with_radius }, tutorCourses] =
+    await Promise.all([
+      fetchAcademicData(),
+      getLocationInfoFromSheet(),
+      fetchTutorCourseData(),
+    ]);
+  let result = parceAcademicData(rawAcademicData);
+  return { result, rawAcademicData, state_with_radius, tutorCourses };
+}
+
 const serverAdapter = {
   slackChannelNotify,
   sendSlackNotification,
+  getAcademicDataWithRadiusInfo,
+  getTutorsData,
   async saveUserInfo(userInfo: any, cartItems: any, amount: any) {
     let result = await createIELTSUserRecord(userInfo, cartItems, amount);
+    return result;
+  },
+  getRequestInfo: async (slug, withAgent, as_parent = false) => {
+    let result = await getNewRequestDetail(slug, withAgent, as_parent);
     return result;
   },
   async getStoreInfo() {

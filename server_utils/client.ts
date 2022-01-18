@@ -1,12 +1,8 @@
 import storage, { isServer } from "@tuteria/shared-lib/src/local-storage";
 import sStorage from "@tuteria/shared-lib/src/storage";
-import React, { useEffect } from "react";
-import getConfig from "next/config";
-import { format } from "url";
 import jwt_decode from "jwt-decode";
-import { useRouter } from "next/router";
-
-const { publicRuntimeConfig } = getConfig() || {};
+import { useEffect } from "react";
+import { usePrefetchHook } from "./util";
 
 const REGION_KEY = "TEST-REGIONS-VICINITIES";
 const COUNTRY_KEY = "TEST-COUNTRIES";
@@ -47,34 +43,6 @@ function decodedToken(existingTokenFromUrl, key = "tutorToken") {
     }
   }
 }
-
-export function push(router, url, shallow = false, same = true) {
-  let newUrl = `${publicRuntimeConfig.basePath || ""}${format(url)}`;
-  const as = same ? newUrl : undefined;
-  router.push(newUrl, as, { shallow });
-}
-export const usePrefetchHook = ({
-  routes = [],
-  base = "/hometutoring",
-  key = "",
-  keyFunc = (router) => "",
-}) => {
-  let rootBase = key;
-  let router = useRouter();
-  if (keyFunc) {
-    rootBase = keyFunc(router);
-  }
-  useEffect(() => {
-    routes.forEach((route) => {
-      router.prefetch(`${base}${rootBase}${route}`);
-    });
-  }, [routes.length]);
-  const navigate = (path, same = true) => {
-    push(router, `${base}${rootBase}${path}`, true, same);
-  };
-
-  return { navigate, router };
-};
 
 export const useAuhenticationWrapper = ({ store, base = "/hometutors" }) => {
   let { router, navigate } = usePrefetchHook({
@@ -211,6 +179,18 @@ const clientAdapter = {
       return data.data;
     }
     throw "Could not fetch client info";
+  },
+  async saveWhatsAppNumber(slug, phoneNumber) {
+    const response = await fetch(`/api/home-tutoring/update-whatsapp-number`, {
+      body: JSON.stringify({ slug, phoneNumber }),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return data;
+    }
+    throw "Failed to update whatsapp number";
   },
 };
 
