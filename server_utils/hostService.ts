@@ -40,3 +40,40 @@ export async function getParentRequestBySlug(
   }
   throw new Error("Not found");
 }
+
+export async function saveInitializedRequest(requestData) {
+  let response = await fetch(
+    `${HOST}/new-flow/issue-new-home-tutoring-request`,
+    {
+      method: "POST",
+      body: JSON.stringify(requestData),
+      headers: {
+        "Content-type": "application/json"
+      }
+    }
+  );
+  if (response.status < 400) {
+    let data = await response.json();
+    return data.data;
+  }
+  throw new Error("Error from backend server");
+}
+
+export async function getNeighboringArea(region) {
+  const defaultRegion = region ? region : "lekki";
+  let response = await fetch(
+    `${HOST}/new-flow/regions?radius=15&region=${defaultRegion}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    }
+  );
+  if (response.status < 400) {
+    let data = await response.json();
+    return data.data;
+  }
+  throw new Error("Error from backend server");
+}
+

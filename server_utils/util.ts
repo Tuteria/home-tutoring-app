@@ -1,8 +1,9 @@
-import { useEffect } from "react";
-import { useRouter } from "next/router";
 import { useToast } from "@chakra-ui/react";
 import getConfig from "next/config";
+import { useRouter } from "next/router";
+import { useEffect } from "react";
 import { format } from "url";
+
 
 const { publicRuntimeConfig } = getConfig() || {};
 
@@ -59,7 +60,7 @@ export async function verifyPaymentFromPaystack({ url, skip = false }) {
   return { status: false, msg: "An error from server" };
 }
 
-export function getQueryValues(): {[key: string]: string} {
+export function getQueryValues(): { [key: string]: string } {
   if (typeof window !== "undefined") {
     var query = window.location.search.substring(1);
     var vars = query.split("&");

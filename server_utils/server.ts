@@ -1,23 +1,21 @@
-import {
-  createIELTSUserRecord,
-  getIELTSProducts,
-  updateIELTSUserRecord,
-  getCouponCode,
-  buildCart,
-  getLocationInfoFromSheet,
-  fetchAllCountries,
-  fetchAcademicData,
-  parceAcademicData,
-  fetchTutorCourseData,
-} from "@tuteria/tuteria-data/src";
 import { fetchGeneratedIpLocation } from "@tuteria/shared-lib/src/new-request-flow/components/LocationSelector/hook";
-
-import { verifyPaymentFromPaystack } from "./util";
-import { getNewRequestDetail, getSelectedTutorSearchData } from "./hostService";
+import {
+  fetchAcademicData,
+  fetchAllCountries,
+  fetchTutorCourseData,
+  getCouponCode,
+  getLocationInfoFromSheet,
+  parceAcademicData
+} from "@tuteria/tuteria-data/src";
+import {
+  getNewRequestDetail,
+  getSelectedTutorSearchData,
+  saveInitializedRequest
+} from "./hostService";
 import {
   convertServerResultToRequestCompatibleFormat,
   createSearchFilter,
-  getTuteriaSearchSubject,
+  getTuteriaSearchSubject
 } from "./utils";
 
 export const IS_DEVELOPMENT = process.env.IS_DEVELOPMENT || "development";
@@ -50,93 +48,6 @@ export async function sendEmailNotification(data) {
     const result = await response.json();
     return result;
   }
-}
-
-export async function sendSlackNotification(_data) {
-  let data = _data;
-
-  // debugger;
-  const response = await postHelper(
-    `${NOTIFICATION_SERVICE}/send_slack_notification`,
-    data,
-    ""
-  );
-  let result = await response.json();
-  return result;
-}
-
-const constructBody = ({
-  template,
-  from = "Tuteria <automated@tuteria.com>",
-  to,
-  data,
-}) => {
-  let result = {
-    backend: "postmark_backend",
-    template: template,
-    from_mail: from,
-    to: [to],
-    context: [data],
-  };
-  return result;
-};
-
-function notifyStaffOnPaymentMade(
-  clientInfo,
-  amount,
-  sales_email = "tuteriacorp@gmail.com"
-) {
-  let data = {
-    id: 1,
-    date: new Date().toISOString(),
-    full_name: clientInfo.full_name,
-    email: clientInfo.email,
-    phone: clientInfo.phone,
-    country: clientInfo.country,
-    state: clientInfo.state,
-    amount_paid: amount,
-  };
-  return constructBody({ template: "ielts_complete", to: sales_email, data });
-}
-
-function getProductsList(data) {
-  const courses = [
-    "ultimate-ielts-video-course",
-    "complete-ielts-video-course",
-    "ielts-writing-band9-sample-writeups",
-    "ielts-speaking-task-review",
-    "ielts-writing-task-review",
-    "ielts-listening-course",
-    "ielts-reading-course",
-    "ielts-speaking-course",
-    "ielts-writing-course",
-  ];
-  const products = [];
-  courses.forEach((course) => {
-    const quantity = data[course];
-    if (quantity) {
-      products.push(`${course.split("-").join(" ")} (${quantity})`);
-    }
-  });
-  return products.join(", ");
-}
-
-export function slackChannelNotify(
-  clientInfo,
-  amount,
-  agent_id = "C02L7Q5HUBT"
-) {
-  const message = `New Sale\nName: ${clientInfo.full_name}\nPhone: ${
-    clientInfo.phone
-  }\nEmail: ${clientInfo.email}\nProducts: ${getProductsList(
-    clientInfo
-  )}\nFull Amount: N${clientInfo.full_amount}\nAmount Paid: N${
-    clientInfo.amount_paid
-  }\nDiscount Code Used: ${clientInfo.discount_code || "None"}`;
-  return {
-    agentId: agent_id,
-    message,
-  };
 }
 
 export function getCurrency(currency) {
@@ -266,81 +177,16 @@ async function getAcademicDataWithRadiusInfo() {
 }
 
 const serverAdapter = {
-  slackChannelNotify,
-  sendSlackNotification,
   getAcademicDataWithRadiusInfo,
   getTutorsData,
-  async saveUserInfo(userInfo: any, cartItems: any, amount: any) {
-    let result = await createIELTSUserRecord(userInfo, cartItems, amount);
-    return result;
-  },
   getRequestInfo: async (slug, withAgent, as_parent = false) => {
     let result = await getNewRequestDetail(slug, withAgent, as_parent);
-    return result;
-  },
-  async getStoreInfo() {
-    let result = await getIELTSProducts();
-    let mainProduct = result.find((o) => o.featured === true);
-    return {
-      heading: "Everything you need to score a Band 8.0 in IELTS",
-      mainProduct,
-      products: result,
-    };
-  },
-  async updateUserInfo(id: number, data: any, coupon?: any) {
-    let result = await updateIELTSUserRecord(id, data);
-    if (coupon) {
-      result.discountObj = await getCouponCode(result.discount_code || "");
-      result.cartItems = await buildCart(result);
-    }
     return result;
   },
   async verifyCoupon(code) {
     let result = await getCouponCode(code);
     return result;
   },
-  async getPaymentInvoice(
-    id: number,
-    cartItem: { title: string; description: string },
-    amount,
-    currency = "₦"
-  ) {
-    let userInfo = await updateIELTSUserRecord(id, {});
-    let orderIdPrefix = `IELTSSTORE${id}`;
-    let paymentRequest = {
-      amount,
-      currency,
-      order: orderIdPrefix,
-      user: {
-        email: userInfo.email,
-        phone: userInfo.phone,
-        first_name: userInfo.full_name,
-        last_name: "",
-      },
-      processor_info: {
-        title: cartItem.title,
-        description: cartItem.description,
-      },
-    };
-    let gatewayJson = await generatePaymentJson(paymentRequest);
-    return gatewayJson;
-  },
-  async verifyPayment({ url, id, amount }: any) {
-    let result = await verifyPaymentFromPaystack({ url });
-    if (result.status) {
-      let clientInfo = await updateIELTSUserRecord(id, {
-        amount_paid: amount,
-      });
-      let payload = notifyStaffOnPaymentMade(clientInfo, amount);
-      let slackPayload = slackChannelNotify(clientInfo, amount);
-      await Promise.all([
-        sendEmailNotification(payload),
-        sendSlackNotification(slackPayload),
-      ]);
-    }
-    return result;
-  },
-
   getCountries: fetchAllCountries,
   getRegions: async () => {
     let { regions } = await getLocationInfoFromSheet();
@@ -384,6 +230,25 @@ const serverAdapter = {
       modified: requestInfo.modified,
     };
   },
+  async saveInitializedRequest({
+    discount,
+    customerType,
+    country_code,
+    country,
+    phone
+  }) {
+    let discountCode = "";
+    if (discount) {
+      discountCode = "APPLYFIVE";
+    }
+    return await saveInitializedRequest({
+      discountCode,
+      customerType,
+      country_code,
+      country,
+      phone
+    });
+  }
 };
 
 export default serverAdapter;

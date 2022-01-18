@@ -8,6 +8,26 @@ const REGION_KEY = "TEST-REGIONS-VICINITIES";
 const COUNTRY_KEY = "TEST-COUNTRIES";
 const REQUEST_KEY = "TEST-HOME-TUTORING-REQUEST";
 const CLIENT_TOKEN = "CLIENT_TOKEN";
+const SELECTED_TUTORS_KEY = "SELECTED_TUTORS";
+
+function buildFilterFromRequest({ lessonDetails }) {
+  let filters = {
+    gender: ["male", "female"],
+    sortBy: "Recommended",
+    showPremium: false,
+    lessonType: lessonDetails?.lessonType || "pysical",
+    minPrice: 0,
+    maxPrice: 0,
+    educationDegrees: [],
+    educationCountries: [],
+    educationGrades: [],
+    minExperience: ""
+  };
+  return filters;
+}
+
+
+
 async function postFetcher(url, data = {}) {
   let headers: any = {
     "Content-Type": "application/json",
@@ -29,7 +49,7 @@ function decodedToken(existingTokenFromUrl, key = "tutorToken") {
   if (urlAccessToken) {
     //attempt to decode it. if successful, save it to local storage and update the store
     try {
-      let result = jwt_decode(urlAccessToken);
+      let result: any = jwt_decode(urlAccessToken);
       storage.set(key, urlAccessToken);
       if (result.slack_id) {
         result.is_staff = true;
@@ -83,6 +103,7 @@ const clientAdapter = {
   regionKey: REGION_KEY,
   countryKey: COUNTRY_KEY,
   requestKey: REQUEST_KEY,
+  selectedTutorsKey: SELECTED_TUTORS_KEY,
   clientToken: CLIENT_TOKEN,
   decodedToken,
   async generateInvoice(
@@ -133,12 +154,18 @@ const clientAdapter = {
     }
     throw "Error verifying coupon";
   },
-  createIssuedRequest(data) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({});
-      }, 300);
+  createIssuedRequest: async params => {
+    let result = await fetch("/api/home-tutoring/create-issued-request", {
+      method: "POST",
+      body: JSON.stringify(params),
+      headers: {
+        "Content-type": "application/json"
+      }
     });
+    if (result.status < 400) {
+      let o = await result.json();
+      return o;
+    }
   },
   async getIpFromRequest() {
     let response = await fetch("/api/get-ip");
@@ -191,6 +218,148 @@ const clientAdapter = {
       return data;
     }
     throw "Failed to update whatsapp number";
+  },
+
+  initializeRequestData: async () => {
+    let requestData = storage.get(REQUEST_KEY, {});
+    let tutorsData = storage.get(SELECTED_TUTORS_KEY, []);
+    return [requestData, tutorsData];
+  },
+
+  onSubmit: async (key, data, splitRequests, excludeSplit = []) => {
+    let requestData = storage.get(REQUEST_KEY, {});
+    if (key === "student-details") {
+      requestData = { ...requestData, ...data };
+    }
+    if (key === "teacher-selection") {
+      requestData.teacherKind = data.teacherOption;
+    }
+    if (key === "lesson-schedule") {
+      requestData.lessonDetails = {
+        ...(requestData.lessonDetails || {}),
+        lessonSchedule: {
+          ...((requestData.lessonDetails || {}).lessonSchedule || {}),
+          ...data
+        }
+      };
+    }
+    if (key === "lesson-location") {
+      requestData.contactDetails = {
+        ...(requestData.contactDetails || {}),
+        vicinity: data.vicinity,
+        state: data.state,
+        address: data.address,
+        country: data.country,
+        region: data.region
+      };
+      requestData.lessonDetails = {
+        ...(requestData.lessonDetails || {}),
+        lessonType: data.lessonType
+      };
+    }
+    if (key === "contact-information") {
+      requestData.contactDetails = {
+        ...(requestData.contactDetails || {}),
+        ...data
+      };
+    }
+    if (key == "client-schedule") {
+      requestData.clientSchedule = data || [];
+    }
+    if (splitRequests) {
+      requestData.splitRequests = splitRequests;
+      requestData.missingTutorSplitRequests = excludeSplit;
+      if (excludeSplit.length > 0) {
+        let { childDetails } = requestData;
+        let withSubjects = childDetails.map(o => ({
+          name: o.name,
+          subjects: o.classDetail.subjects
+        }));
+        let missingChild = excludeSplit
+          .map(o => {
+            return o.names.map(x => ({ name: x, subject: o.subjectGroup }));
+          })
+          .flat();
+        let childCopy = JSON.parse(JSON.stringify(childDetails));
+        let mapped = childCopy.map(c => {
+          let subjects = missingChild
+            .filter(o => o.name === c.name)
+            .map(o => o.subject)
+            .flat();
+          return {
+            ...c,
+            classDetail: {
+              ...c.classDetail,
+              subjects: c.classDetail.subjects.filter(
+                o => !subjects.includes(o)
+              )
+            }
+          };
+        });
+        requestData.childDetails = mapped;
+        requestData.oldChildDetails = childDetails;
+        sStorage.delete();
+      }
+    }
+    requestData.filters = buildFilterFromRequest(requestData);
+    storage.set(REQUEST_KEY, requestData);
+    return data;
+  },
+  getCountries: async (savedCountry, savedState) => {
+    try {
+      // let result = { country: "Nigeria" };
+      let result: any = {};
+      let regions = storage.get(REGION_KEY, []);
+      if (Array.isArray(regions) && regions.length > 0) {
+        result.regions = regions;
+      } else {
+        let fetched = false;
+        let key = "";
+        if (savedCountry || savedState) {
+          key = `${savedCountry}-${savedState}`;
+          let rr = sStorage.get(key, []);
+          if (Array.isArray(rr) && rr.length > 0) {
+            result.regions = rr;
+            fetched = true;
+          }
+        }
+        if (!fetched) {
+          let regionResponse = await fetch("/api/get-vicinities");
+          let rData = await regionResponse.json();
+          if (key) {
+            sStorage.set(key, rData.data);
+          }
+          result.regions = rData.data;
+        }
+      }
+      let countries = storage.get(COUNTRY_KEY, []);
+      if (Array.isArray(countries) && countries.length > 0) {
+        result.countries = countries;
+      } else {
+        let response = await fetch(
+          "/api/home-tutoring/country-and-region-info"
+        );
+        let data = await response.json();
+        result.countries = data.data;
+      }
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getNeighboringArea: async region => {
+    let response = await fetch(
+      `/api/get-neighboring-regions?region=${region}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-type": "application/json"
+        }
+      }
+    );
+    let result = await response.json();
+    return result.data;
   },
 };
 
