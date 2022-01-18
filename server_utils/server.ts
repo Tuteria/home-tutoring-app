@@ -5,17 +5,21 @@ import {
   fetchTutorCourseData,
   getCouponCode,
   getLocationInfoFromSheet,
-  parceAcademicData
+  parceAcademicData,
+  getSearchConfig,
 } from "@tuteria/tuteria-data/src";
 import {
   getNewRequestDetail,
   getSelectedTutorSearchData,
-  saveInitializedRequest
+  saveCompletedRequest,
+  saveInitializedRequest,
+  updateCompletedRequest
 } from "./hostService";
 import {
   convertServerResultToRequestCompatibleFormat,
   createSearchFilter,
-  getTuteriaSearchSubject
+  getTuteriaSearchSubject,
+  trimSearchResult
 } from "./utils";
 
 export const IS_DEVELOPMENT = process.env.IS_DEVELOPMENT || "development";
@@ -176,6 +180,20 @@ async function getAcademicDataWithRadiusInfo() {
   return { result, rawAcademicData, state_with_radius, tutorCourses };
 }
 
+async function saveParentRequest(requestData, paymentInfo) {
+  // need to reduce the information sent to the django server.
+  requestData.splitRequests = requestData.splitRequests.map(o => ({
+    ...o,
+    tutorData: undefined
+  }));
+  if (paymentInfo) {
+    let result = await updateCompletedRequest(requestData, paymentInfo);
+    return result;
+  }
+  return await saveCompletedRequest(requestData);
+}
+
+
 const serverAdapter = {
   getAcademicDataWithRadiusInfo,
   getTutorsData,
@@ -248,7 +266,56 @@ const serverAdapter = {
       country,
       phone
     });
-  }
+  },
+
+  async getSearchConfig() {
+    let result = await getSearchConfig();
+    let data = {};
+    result.forEach(r => {
+      data[r.filters] = r.status.toLowerCase() === "true";
+    });
+    return data;
+  },
+
+  async saveParentRequest(requestData, paymentInfo, notifyTutors = false) {
+    let result = await saveParentRequest(requestData, paymentInfo);
+    return result;
+  },
+
+  async checkAvailabilityOfTutors({
+    splitRequests,
+    contactDetails,
+    lessonDetails,
+    teacherKind
+  }) {
+    let searchFilters = splitRequests.map((o, index) =>
+      createSearchFilter(
+        { splitRequests, contactDetails, lessonDetails, teacherKind },
+        index
+      )
+    );
+    let academicDataWithStateInfo = await getAcademicDataWithRadiusInfo();
+    let result = await Promise.all(
+      searchFilters.map(x =>
+        this.getQualifiedTutors(x, academicDataWithStateInfo, true)
+      )
+    );
+    let options = await this.getSearchConfig();
+    const data = result.map((item, index) => {
+      return trimSearchResult(
+        item.transformed,
+        [],
+        { lessonDetails, contactDetails },
+        splitRequests[index],
+        item.specialities,
+        [],
+        true,
+        options
+      );
+    });
+    return data;
+  },
+
 };
 
 export default serverAdapter;

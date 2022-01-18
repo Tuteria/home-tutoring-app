@@ -77,3 +77,41 @@ export async function getNeighboringArea(region) {
   throw new Error("Error from backend server");
 }
 
+export async function saveCompletedRequest(requestData) {
+  let { slug } = requestData;
+  let response = await fetch(
+    `${HOST}/new-flow/save-home-tutoring-request/${slug}`,
+    {
+      method: "POST",
+      body: JSON.stringify({ requestData }),
+      headers: {
+        "Content-type": "application/json"
+      }
+    }
+  );
+  if (response.status < 400) {
+    let data = await response.json();
+    return data.data;
+  }
+  throw new Error("Error from backend server");
+}
+
+
+export async function updateCompletedRequest(requestData, paymentInfo) {
+  let { slug } = requestData;
+  let response = await fetch(
+    `${HOST}/new-flow/update-home-tutoring-request/${slug}`,
+    {
+      method: "POST",
+      body: JSON.stringify({ requestData, paymentInfo }),
+      headers: {
+        "Content-type": "application/json"
+      }
+    }
+  );
+  if (response.status < 400) {
+    let data = await response.json();
+    return data.data;
+  }
+  throw new Error("Error from backend server");
+}

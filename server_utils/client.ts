@@ -361,6 +361,35 @@ const clientAdapter = {
     let result = await response.json();
     return result.data;
   },
+  checkIfTutorsExists: async params => {
+    let requestData = storage.get(REQUEST_KEY, {});
+    const response = await fetch("/api/home-tutoring/check-for-tutors", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(requestData)
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      let result = data.data;
+      //cache the original result then return the length of each results
+      sStorage.set(`search-${params.slug}`, result);
+      //cached result would be used on the search page.
+      result = result.map(o => o.length);
+
+      let map = {};
+      result.forEach((o, i) => {
+        map[o] = i;
+      });
+      let mrr = result.filter(o => o === 0).map(x => map[x]);
+      return mrr;
+    }
+    throw "Error booking lessons";
+    return [];
+  },
+
 };
 
 export default clientAdapter;
