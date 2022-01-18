@@ -1,9 +1,17 @@
-import storage from "@tuteria/shared-lib/src/local-storage";
+import storage, { isServer } from "@tuteria/shared-lib/src/local-storage";
 import sStorage from "@tuteria/shared-lib/src/storage";
+import React, { useEffect } from "react";
+import getConfig from "next/config";
+import { format } from "url";
+import jwt_decode from "jwt-decode";
+import { useRouter } from "next/router";
+
+const { publicRuntimeConfig } = getConfig() || {};
 
 const REGION_KEY = "TEST-REGIONS-VICINITIES";
 const COUNTRY_KEY = "TEST-COUNTRIES";
 const REQUEST_KEY = "TEST-HOME-TUTORING-REQUEST";
+const CLIENT_TOKEN = "CLIENT_TOKEN";
 async function postFetcher(url, data = {}) {
   let headers: any = {
     "Content-Type": "application/json",
@@ -16,10 +24,99 @@ async function postFetcher(url, data = {}) {
   return response;
 }
 
+function decodedToken(existingTokenFromUrl, key = "tutorToken") {
+  let urlAccessToken = existingTokenFromUrl;
+  if (!urlAccessToken) {
+    //check the local storage for the token.
+    urlAccessToken = storage.get(key);
+  }
+  if (urlAccessToken) {
+    //attempt to decode it. if successful, save it to local storage and update the store
+    try {
+      let result = jwt_decode(urlAccessToken);
+      storage.set(key, urlAccessToken);
+      if (result.slack_id) {
+        result.is_staff = true;
+      }
+      if (result.userId) {
+        result.is_tutor = true;
+      }
+      return result;
+    } catch (error) {
+      console.log("failed");
+    }
+  }
+}
+
+export function push(router, url, shallow = false, same = true) {
+  let newUrl = `${publicRuntimeConfig.basePath || ""}${format(url)}`;
+  const as = same ? newUrl : undefined;
+  router.push(newUrl, as, { shallow });
+}
+export const usePrefetchHook = ({
+  routes = [],
+  base = "/hometutoring",
+  key = "",
+  keyFunc = (router) => "",
+}) => {
+  let rootBase = key;
+  let router = useRouter();
+  if (keyFunc) {
+    rootBase = keyFunc(router);
+  }
+  useEffect(() => {
+    routes.forEach((route) => {
+      router.prefetch(`${base}${rootBase}${route}`);
+    });
+  }, [routes.length]);
+  const navigate = (path, same = true) => {
+    push(router, `${base}${rootBase}${path}`, true, same);
+  };
+
+  return { navigate, router };
+};
+
+export const useAuhenticationWrapper = ({ store, base = "/hometutors" }) => {
+  let { router, navigate } = usePrefetchHook({
+    routes: ["/request", "/checkout/[slug]", "/search/[slug]"],
+    base,
+  });
+  function getAndDecodeAccessToken() {
+    //check url for access_token
+    let cleanedUrl =
+      window.location.search.replace("?act=", "").split("&")[0] || "";
+    let urlAccessToken = router.query.act || cleanedUrl;
+    let result = clientAdapter.decodedToken(
+      urlAccessToken,
+      clientAdapter.clientToken
+    );
+    if (result) {
+      if (result.is_staff) {
+        if (store.updateAdminLogin) {
+          store.updateAdminLogin(true);
+        }
+      } else {
+        if (store.mapToStore) {
+          store.mapToStore({ contactDetails: result });
+          store.updateLoggedIn(true);
+        }
+      }
+    }
+  }
+  useEffect(() => {
+    if (!isServer) {
+      getAndDecodeAccessToken();
+    }
+  }, []);
+  return { router, navigate };
+};
+
 const clientAdapter = {
   regionKey: REGION_KEY,
   countryKey: COUNTRY_KEY,
   requestKey: REQUEST_KEY,
+  clientToken: CLIENT_TOKEN,
+  decodedToken,
   async generateInvoice(
     amountToBePaid: number,
     { cartitems, currency, id }: any
@@ -95,6 +192,25 @@ const clientAdapter = {
   initializeLandingPage({ regions, countries }) {
     storage.set(clientAdapter.regionKey, regions);
     storage.set(clientAdapter.countryKey, countries);
+  },
+  getClientRequest: async (slug, cached = false, kind = "default") => {
+    if (cached) {
+      let key = `home-`;
+      if (kind !== "default") {
+        key = `home-full-`;
+      }
+      let savedInfo = sStorage.get(`${key}${slug}`, undefined);
+      if (savedInfo && Object.keys(savedInfo).length > 0) {
+        return savedInfo;
+      }
+    }
+    let response = await fetch(`/api/home-tutoring/get-request/${slug}`);
+    if (response.status < 400) {
+      let data = await response.json();
+      console.log("DATA!!!", data.data);
+      return data.data;
+    }
+    throw "Could not fetch client info";
   },
 };
 

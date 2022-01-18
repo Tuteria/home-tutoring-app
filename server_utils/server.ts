@@ -6,8 +6,10 @@ import {
   buildCart,
   getLocationInfoFromSheet,
   fetchAllCountries,
+  fetchAcademicData,
+  parceAcademicData,
 } from "@tuteria/tuteria-data/src";
-import { fetchGeneratedIpLocation } from "@tuteria/shared-lib/src/new-request-flow/components/LocationSelector/hook"
+import { fetchGeneratedIpLocation } from "@tuteria/shared-lib/src/new-request-flow/components/LocationSelector/hook";
 
 import { verifyPaymentFromPaystack } from "./util";
 
@@ -106,10 +108,10 @@ function getProductsList(data) {
   courses.forEach((course) => {
     const quantity = data[course];
     if (quantity) {
-      products.push(`${course.split('-').join(' ')} (${quantity})`);
+      products.push(`${course.split("-").join(" ")} (${quantity})`);
     }
   });
-  return products.join(', ');
+  return products.join(", ");
 }
 
 export function slackChannelNotify(
@@ -117,7 +119,13 @@ export function slackChannelNotify(
   amount,
   agent_id = "C02L7Q5HUBT"
 ) {
-  const message = `New Sale\nName: ${clientInfo.full_name}\nPhone: ${clientInfo.phone}\nEmail: ${clientInfo.email}\nProducts: ${getProductsList(clientInfo)}\nFull Amount: N${clientInfo.full_amount}\nAmount Paid: N${clientInfo.amount_paid}\nDiscount Code Used: ${clientInfo.discount_code || 'None'}`
+  const message = `New Sale\nName: ${clientInfo.full_name}\nPhone: ${
+    clientInfo.phone
+  }\nEmail: ${clientInfo.email}\nProducts: ${getProductsList(
+    clientInfo
+  )}\nFull Amount: N${clientInfo.full_amount}\nAmount Paid: N${
+    clientInfo.amount_paid
+  }\nDiscount Code Used: ${clientInfo.discount_code || "None"}`;
   return {
     agentId: agent_id,
     message,
@@ -270,7 +278,11 @@ const serverAdapter = {
     let ipLocations = {};
     ipLocations = await fetchGeneratedIpLocation(client_ip);
     return ipLocations;
-  }
+  },
+  fetchAcademicData: async () => {
+    let result = await fetchAcademicData();
+    return parceAcademicData(result);
+  },
 };
 
 export default serverAdapter;
