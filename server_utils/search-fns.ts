@@ -4,8 +4,8 @@ const transformBookings = (activeBookings = []) => {
   let allSchedule = [];
   let result = {};
 
-  activeBookings.forEach(booking => allSchedule.push(...booking.schedule));
-  allSchedule.forEach(schedule => {
+  activeBookings.forEach((booking) => allSchedule.push(...booking.schedule));
+  allSchedule.forEach((schedule) => {
     let day = schedule.split(":")[0].trim();
     let time = schedule.split(":")[1].trim();
 
@@ -19,11 +19,14 @@ const transformBookings = (activeBookings = []) => {
   return result;
 };
 
-export const pipeFunc = (...fns) => x => fns.reduce((y, f) => f(y), x);
+export const pipeFunc =
+  (...fns) =>
+  (x) =>
+    fns.reduce((y, f) => f(y), x);
 
 export function getTeachingExperience(tutorData) {
   let teachingWorkHistory = tutorData.workHistory.filter(
-    workHistory => workHistory.isTeachingRole
+    (workHistory) => workHistory.isTeachingRole
   );
 
   const workReducer = (accumulator, currentValue) => {
@@ -55,13 +58,13 @@ function getTeachingExperienceScore(tutorData) {
 function getEducationScore(tutorData) {
   let highestEducation = tutorData.education[0];
   let degree = DEGREE_DATA.find(
-    data => data.abbrev === highestEducation.degree
+    (data) => data.abbrev === highestEducation.degree
   );
   if (degree !== undefined) return degree.rank;
   return 1;
 }
 function getMaxValue(tutors, key) {
-  let valueArr = tutors.map(item => item[key]);
+  let valueArr = tutors.map((item) => item[key]);
   return Math.max(...valueArr);
 }
 export function calculateTutorAge(tutorData) {
@@ -78,39 +81,41 @@ export const removeExcludedTutors = (
   tutorOptions = [],
   searchObj,
   requestData,
-  options = {}
+  options: any = {}
 ) => {
-  const removeSelectedTutors = tutorDataArray => {
+  const removeSelectedTutors = (tutorDataArray) => {
     let excludeTutors = [...tutorIDs, ...deniedTutors];
     if (excludeTutors.length)
       return tutorDataArray.filter(
-        tutor => !excludeTutors.includes(tutor.userId)
+        (tutor) => !excludeTutors.includes(tutor.userId)
       );
     return tutorDataArray;
   };
 
-  const filterBySpecialities = tutorDataArray => {
+  const filterBySpecialities = (tutorDataArray) => {
     if (specialities.length) {
-      tutorDataArray.filter(tutor =>
-        tutor.specialities.some(speciality => specialities.includes(speciality))
+      tutorDataArray.filter((tutor) =>
+        tutor.specialities.some((speciality) =>
+          specialities.includes(speciality)
+        )
       );
     }
     return tutorDataArray;
   };
 
-  const removeReachedMaxDeclines = tutorDataArray =>
-    tutorDataArray.filter(tutor => tutor.requestsDeclined < 3);
+  const removeReachedMaxDeclines = (tutorDataArray) =>
+    tutorDataArray.filter((tutor) => tutor.requestsDeclined < 3);
 
-  const removeIgnoredRequests = tutorDataArray =>
-    tutorDataArray.filter(tutor => tutor.requestsNotResponded === 0);
+  const removeIgnoredRequests = (tutorDataArray) =>
+    tutorDataArray.filter((tutor) => tutor.requestsNotResponded === 0);
 
-  const declinedAllRequests = tutor =>
+  const declinedAllRequests = (tutor) =>
     tutor.totalJobsAssigned > 1 &&
     tutor.requestsDeclined === tutor.totalJobsAssigned;
-  const removeDeclinedAllRequests = tutorDataArray =>
-    tutorDataArray.filter(tutor => !declinedAllRequests(tutor));
+  const removeDeclinedAllRequests = (tutorDataArray) =>
+    tutorDataArray.filter((tutor) => !declinedAllRequests(tutor));
 
-  const hasMultiplePendingJobs = tutor => {
+  const hasMultiplePendingJobs = (tutor) => {
     const previousPendingJobs =
       tutor.totalJobsAssigned -
       (tutor.requestPending +
@@ -126,29 +131,31 @@ export const removeExcludedTutors = (
     return false;
   };
 
-  const removeMultiplePendingJobs = tutorDataArray =>
-    tutorDataArray.filter(tutor => tutor.requestPending < 4);
+  const removeMultiplePendingJobs = (tutorDataArray) =>
+    tutorDataArray.filter((tutor) => tutor.requestPending < 4);
   // tutorDataArray.filter(tutor => !hasMultiplePendingJobs(tutor));
 
-  const removeOutdatedCalendar = tutorDataArray =>
+  const removeOutdatedCalendar = (tutorDataArray) =>
     tutorDataArray.filter(
-      tutor => diffInDays(new Date(), new Date(tutor.lastCalendarUpdate)) < 40
+      (tutor) => diffInDays(new Date(), new Date(tutor.lastCalendarUpdate)) < 40
     );
 
-  const removeMaxDays = tutorDataArray =>
+  const removeMaxDays = (tutorDataArray) =>
     tutorDataArray.filter(
-      tutor => tutor.maxDays >= searchObj.lessonDays.length
+      (tutor) => tutor.maxDays >= searchObj.lessonDays.length
     );
 
-  const removeMaxStudents = tutorDataArray =>
-    tutorDataArray.filter(tutor => tutor.maxStudents >= searchObj.names.length);
+  const removeMaxStudents = (tutorDataArray) =>
+    tutorDataArray.filter(
+      (tutor) => tutor.maxStudents >= searchObj.names.length
+    );
 
-  const removeMaxHours = tutorDataArray => {
+  const removeMaxHours = (tutorDataArray) => {
     let hours = requestData.lessonDetails.lessonSchedule.lessonHours;
-    return tutorDataArray.filter(tutor => tutor.maxHours >= hours);
+    return tutorDataArray.filter((tutor) => tutor.maxHours >= hours);
   };
 
-  const removeFullyBookedTutors = tutorDataArray => {
+  const removeFullyBookedTutors = (tutorDataArray) => {
     function maxBookings(tutor) {
       if (tutor.maxDays <= 2) return 1;
       if (tutor.maxDays > 2 && tutor.maxDays <= 6) return tutor.maxDays - 1;
@@ -156,22 +163,24 @@ export const removeExcludedTutors = (
     }
 
     return tutorDataArray.filter(
-      tutor => tutor.activeBookings.length <= maxBookings(tutor)
+      (tutor) => tutor.activeBookings.length <= maxBookings(tutor)
     );
   };
 
-  const removeUnavailableTutors = tutorDataArray => {
+  const removeUnavailableTutors = (tutorDataArray) => {
     const lessonDays = searchObj.lessonDays;
 
     function hasMatchingDays(availability) {
       const tutorsDays = Object.keys(availability);
-      return lessonDays.every(day => tutorsDays.includes(day));
+      return lessonDays.every((day) => tutorsDays.includes(day));
     }
 
-    return tutorDataArray.filter(tutor => hasMatchingDays(tutor.availability));
+    return tutorDataArray.filter((tutor) =>
+      hasMatchingDays(tutor.availability)
+    );
   };
 
-  const removeUnavailableTimes = tutorDataArray => {
+  const removeUnavailableTimes = (tutorDataArray) => {
     const { mapPeriodToTime } = SCHEDULE_DATA;
     const lessonDays = searchObj.lessonDays;
     let lessonTime = requestData.lessonDetails.lessonSchedule.lessonTime;
@@ -181,22 +190,24 @@ export const removeExcludedTutors = (
       if (times.includes(lessonTime)) selectedPeriod = period;
     });
 
-    let result = tutorDataArray.filter(tutor =>
-      lessonDays.every(day => tutor.availability[day].includes(selectedPeriod))
+    let result = tutorDataArray.filter((tutor) =>
+      lessonDays.every((day) =>
+        tutor.availability[day].includes(selectedPeriod)
+      )
     );
 
     return result;
   };
 
-  const removeTutorsWithSameBookings = tutorDataArray => {
+  const removeTutorsWithSameBookings = (tutorDataArray) => {
     const lessonDays = searchObj.lessonDays;
 
-    let newData = tutorDataArray.filter(tutor => {
+    let newData = tutorDataArray.filter((tutor) => {
       let availableDays = 0;
       if (tutor.activeBookings.length) {
         let bookings = transformBookings(tutor.activeBookings);
 
-        lessonDays.forEach(day => {
+        lessonDays.forEach((day) => {
           let classesPerDay = bookings[day] ? bookings[day].length : 0;
           if (classesPerDay < 2) availableDays++;
         });
@@ -268,7 +279,7 @@ const rankFx = {
   education: 5,
   distance: 4,
   calendar: 4,
-  decline: -5
+  decline: -5,
 };
 
 export function getRelevantScoreExcludingPrice(
@@ -279,14 +290,16 @@ export function getRelevantScoreExcludingPrice(
   let maxStudents = getMaxValue(tutorOptions, "students");
   let maxLessons = getMaxValue(tutorOptions, "lessonsTaught");
 
-  let tutorOptionsArray = tutorOptions.map(tutor => {
-    let tutorData = tutorDataOptions.find(data => data.userId === tutor.userId);
+  let tutorOptionsArray = tutorOptions.map((tutor) => {
+    let tutorData = tutorDataOptions.find(
+      (data) => data.userId === tutor.userId
+    );
     let relevanceScore = 0;
 
     function matchCount(searchObjKey = "", tutorObjKey = "", weight) {
       let matchedCount = 0;
       if (searchObj[searchObjKey]?.length) {
-        let matchedItems = searchObj[searchObjKey].filter(item =>
+        let matchedItems = searchObj[searchObjKey].filter((item) =>
           (tutor[tutorObjKey] || []).includes(item)
         );
         matchedCount =
@@ -304,8 +317,8 @@ export function getRelevantScoreExcludingPrice(
 
       let searchStringArray = [...new Set(searchString.split(" "))];
 
-      searchStringArray.forEach(string =>
-        mainText.forEach(text => {
+      searchStringArray.forEach((string) =>
+        mainText.forEach((text) => {
           if (text.includes(string)) matchCount++;
         })
       );
@@ -395,7 +408,7 @@ export function getRelevantScoreExcludingPrice(
     if (tutor.subject.description) {
       relevanceScore = relevanceScore + getWordMatchCount("description");
     }
-    if (tutor.workHistory.map(o => o.isTeachingProfile).includes(true)) {
+    if (tutor.workHistory.map((o) => o.isTeachingProfile).includes(true)) {
     }
     console.log(tutor);
     return {
@@ -404,14 +417,14 @@ export function getRelevantScoreExcludingPrice(
       experience: getTeachingExperience(tutor) || 0,
       isIndemand: tutor.activeBookings.length > 1,
       age: calculateTutorAge(tutor),
-      eduDegrees: tutor.education.map(obj => obj.degree),
-      eduGrades: [...new Set(tutor.education.map(obj => obj.grade))].filter(
+      eduDegrees: tutor.education.map((obj) => obj.degree),
+      eduGrades: [...new Set(tutor.education.map((obj) => obj.grade))].filter(
         Boolean
       ),
       eduCountries: [
-        ...new Set(tutor.education.map(obj => obj.country))
+        ...new Set(tutor.education.map((obj) => obj.country)),
       ].filter(Boolean),
-      otherDetails: tutorData
+      otherDetails: tutorData,
     };
   });
 

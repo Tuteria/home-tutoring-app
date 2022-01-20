@@ -652,116 +652,116 @@ function determinePayment(
   };
 }
 
-export function generatePaymentInfo(
-  requestData,
-  discountObj = { discount: 0 },
-  selectedTutors = []
-) {
-  let {
-    splitRequests: selectedSplits = [],
-    lessonDetails,
-    filters,
-  } = requestData;
-  let { lessonSchedule: oldLessonSchedule, lessonType } = lessonDetails;
+// export function generatePaymentInfo(
+//   requestData,
+//   discountObj = { discount: 0 },
+//   selectedTutors = []
+// ) {
+//   let {
+//     splitRequests: selectedSplits = [],
+//     lessonDetails,
+//     filters,
+//   } = requestData;
+//   let { lessonSchedule: oldLessonSchedule, lessonType } = lessonDetails;
 
-  let lessonHours = oldLessonSchedule ? oldLessonSchedule.lessonHours : "";
+//   let lessonHours = oldLessonSchedule ? oldLessonSchedule.lessonHours : "";
 
-  let daysRequested = oldLessonSchedule ? oldLessonSchedule.lessonDays : [];
-  let daysSelected = [];
-  selectedSplits
-    .filter((split) => split.names.length > 0)
-    .map((split) => daysSelected.push(...split.lessonDays));
-  daysSelected = [...new Set([...daysSelected])];
+//   let daysRequested = oldLessonSchedule ? oldLessonSchedule.lessonDays : [];
+//   let daysSelected = [];
+//   selectedSplits
+//     .filter((split) => split.names.length > 0)
+//     .map((split) => daysSelected.push(...split.lessonDays));
+//   daysSelected = [...new Set([...daysSelected])];
 
-  let delivery = Boolean(filters.delivery) ? filters.delivery : lessonType;
+//   let delivery = Boolean(filters.delivery) ? filters.delivery : lessonType;
 
-  let lessonPayments = selectedSplits.map((o, index) => {
-    let lD = {
-      lessonDays: o.lessonDays,
-      lessonHours: o.lessonHours,
-      lessonDuration: o.lessonDuration,
-      lessonUrgency: o.lessonUrgency,
-      lessonTime: o.lessonTime,
-    };
-    let lessonSchedule = lD;
-    if (!lessonSchedule.lessonHours) {
-      lessonSchedule.lessonHours = oldLessonSchedule.lessonHours;
-    }
-    if (lessonSchedule.lessonDays.length === 0) {
-      lessonSchedule.lessonDays = oldLessonSchedule.lessonDays;
-    }
-    if (!lessonSchedule.lessonDuration) {
-      lessonSchedule.lessonDuration = oldLessonSchedule.lessonDuration;
-    }
-    let selectedTutor = selectedTutors[index];
-    return determinePayment(
-      lessonSchedule,
-      selectedTutor,
-      o.names.length,
-      delivery,
-      self.distanceThreshold,
-      self.farePerKM,
-      o.searchSubject,
-      selectedTutor.subject.tuteriaName
-    );
-  });
-  let tuitionFee = 0,
-    totalLessons = 0,
-    totalDiscount = 0,
-    transportFare = 0;
+//   let lessonPayments = selectedSplits.map((o, index) => {
+//     let lD = {
+//       lessonDays: o.lessonDays,
+//       lessonHours: o.lessonHours,
+//       lessonDuration: o.lessonDuration,
+//       lessonUrgency: o.lessonUrgency,
+//       lessonTime: o.lessonTime,
+//     };
+//     let lessonSchedule = lD;
+//     if (!lessonSchedule.lessonHours) {
+//       lessonSchedule.lessonHours = oldLessonSchedule.lessonHours;
+//     }
+//     if (lessonSchedule.lessonDays.length === 0) {
+//       lessonSchedule.lessonDays = oldLessonSchedule.lessonDays;
+//     }
+//     if (!lessonSchedule.lessonDuration) {
+//       lessonSchedule.lessonDuration = oldLessonSchedule.lessonDuration;
+//     }
+//     let selectedTutor = selectedTutors[index];
+//     return determinePayment(
+//       lessonSchedule,
+//       selectedTutor,
+//       o.names.length,
+//       delivery,
+//       self.distanceThreshold,
+//       self.farePerKM,
+//       o.searchSubject,
+//       selectedTutor.subject.tuteriaName
+//     );
+//   });
+//   let tuitionFee = 0,
+//     totalLessons = 0,
+//     totalDiscount = 0,
+//     transportFare = 0;
 
-  for (let i = 0; i < lessonPayments.length; i++) {
-    tuitionFee += Math.round(lessonPayments[i].lessonFee);
-    totalLessons += lessonPayments[i].lessons;
-    totalDiscount += Math.round(lessonPayments[i].firstBookingDiscount);
-    transportFare += Math.round(lessonPayments[i].transportFare);
-  }
-  // conditionally apply discount logic only when there isn't any discount applied by tutor.
-  let couponDiscount = 0;
-  function calculateTotalDiscount(self, amount) {
-    if (self.discountType === "flat") {
-      return self.discount;
-    }
-    return (self.discount * amount) / 100;
-  }
-  if (discountObj) {
-    couponDiscount = calculateTotalDiscount(discountObj, tuitionFee);
-    totalDiscount += couponDiscount;
-  }
-  let appliedDiscount = totalDiscount > 0;
+//   for (let i = 0; i < lessonPayments.length; i++) {
+//     tuitionFee += Math.round(lessonPayments[i].lessonFee);
+//     totalLessons += lessonPayments[i].lessons;
+//     totalDiscount += Math.round(lessonPayments[i].firstBookingDiscount);
+//     transportFare += Math.round(lessonPayments[i].transportFare);
+//   }
+//   // conditionally apply discount logic only when there isn't any discount applied by tutor.
+//   let couponDiscount = 0;
+//   function calculateTotalDiscount(self, amount) {
+//     if (self.discountType === "flat") {
+//       return self.discount;
+//     }
+//     return (self.discount * amount) / 100;
+//   }
+//   if (discountObj) {
+//     couponDiscount = calculateTotalDiscount(discountObj, tuitionFee);
+//     totalDiscount += couponDiscount;
+//   }
+//   let appliedDiscount = totalDiscount > 0;
 
-  let totalTuition = tuitionFee + transportFare - totalDiscount;
-  let isBillableDistance = transportFare > 0 && delivery === "physical";
+//   let totalTuition = tuitionFee + transportFare - totalDiscount;
+//   let isBillableDistance = transportFare > 0 && delivery === "physical";
 
-  let activeTeacherIDs = selectedSplits
-    .filter((split) => split.names.length > 0)
-    .map((teacher) => teacher.selectedTutor.userId);
+//   let activeTeacherIDs = selectedSplits
+//     .filter((split) => split.names.length > 0)
+//     .map((teacher) => teacher.selectedTutor.userId);
 
-  const getLessonsPerDay = (day) => {
-    let days = selectedSplits.filter(
-      (split) => split.lessonDays.includes(day) && split.names.length > 0
-    );
-    return days.length;
-  };
+//   const getLessonsPerDay = (day) => {
+//     let days = selectedSplits.filter(
+//       (split) => split.lessonDays.includes(day) && split.names.length > 0
+//     );
+//     return days.length;
+//   };
 
-  return {
-    lessonPayments,
-    totalTuition,
-    tuitionFee,
-    totalLessons,
-    totalDiscount,
-    transportFare,
-    isBillableDistance,
-    activeTeacherIDs,
-    daysRequested,
-    daysSelected,
-    getLessonsPerDay,
-    appliedDiscount,
-    couponDiscount,
-    discountCode: discountObj?.discountCode || "",
-    hoursOfLesson: lessonHours,
-  };
-}
+//   return {
+//     lessonPayments,
+//     totalTuition,
+//     tuitionFee,
+//     totalLessons,
+//     totalDiscount,
+//     transportFare,
+//     isBillableDistance,
+//     activeTeacherIDs,
+//     daysRequested,
+//     daysSelected,
+//     getLessonsPerDay,
+//     appliedDiscount,
+//     couponDiscount,
+//     discountCode: discountObj?.discountCode || "",
+//     hoursOfLesson: lessonHours,
+//   };
+// }
 
 export function updateSplitRequests(currentSplits, currentTutor, index) {
   let selectedTutors = [];
