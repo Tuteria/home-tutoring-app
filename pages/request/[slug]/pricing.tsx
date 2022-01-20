@@ -17,7 +17,7 @@ function getQueryVariable(variable) {
   console.log("Query variable %s not found", variable);
 }
 const store = ClientRequestStore.create({}, { adapter });
-const NewPricingPage = ({ pricingInfo, requestData }) => {
+const NewPricingPage = ({ pricingInfo, requestData, slug }) => {
   const [loaded, setLoaded] = React.useState(false);
   let { navigate } = usePrefetchHook({
     routes: ["/request/[slug]"],
@@ -37,7 +37,7 @@ const NewPricingPage = ({ pricingInfo, requestData }) => {
       pricingData={store.pricingInfo}
       // pricingData={samplePricingData}
       onEditRequest={() => {
-        navigate("/request");
+        navigate(`/request/${slug}`);
       }}
       onSelectPlan={(plan, price) => {
         console.log({ plan, price });
@@ -47,11 +47,11 @@ const NewPricingPage = ({ pricingInfo, requestData }) => {
 };
 
 export async function getServerSideProps({ params, query, res, req }) {
-  let [pricingInfo, requestData] = await Promise.all([
+  let [pricingInfo, bookingInfo] = await Promise.all([
     serverAdapter.getPricingInfo(),
-    serverAdapter.getRequestInfo(params.slug),
+    serverAdapter.getRequestInfo(params.slug, true, true),
   ]);
-  if (requestData.splitRequests.length == 0) {
+  if (bookingInfo.requestData.splitRequests.length == 0) {
     res.writeHead(302, {
       Location: `/request`,
     });
@@ -61,7 +61,8 @@ export async function getServerSideProps({ params, query, res, req }) {
   return {
     props: {
       pricingInfo,
-      requestData,
+      requestData: bookingInfo.requestData,
+      slug: params.slug,
     },
   };
 }

@@ -21,12 +21,10 @@ function buildFilterFromRequest({ lessonDetails }) {
     educationDegrees: [],
     educationCountries: [],
     educationGrades: [],
-    minExperience: ""
+    minExperience: "",
   };
   return filters;
 }
-
-
 
 async function postFetcher(url, data = {}) {
   let headers: any = {
@@ -111,61 +109,13 @@ const clientAdapter = {
   selectedTutorsKey: SELECTED_TUTORS_KEY,
   clientToken: CLIENT_TOKEN,
   decodedToken,
-  async generateInvoice(
-    amountToBePaid: number,
-    { cartitems, currency, id }: any
-  ) {
-    let options = {
-      NGN: "₦",
-    };
-    let response = await postFetcher("/api/generate-invoice", {
-      id,
-      amount: amountToBePaid,
-      cartItem: {
-        title: `Course purchase`,
-        description: `IELTS Course purchase`,
-      },
-      currency: options[currency.toLowerCase()],
-    });
-    if (response.ok) {
-      let data = await response.json();
-      return data.data.data;
-    }
-    throw "Error generating invoice";
-  },
-  async updateUserInfo(id: number, data, amountToBePaid) {
-    let result = {
-      full_amount: amountToBePaid,
-      discount_code: data.discountCode || "",
-    };
-    (data.cartItems || []).forEach((c) => {
-      result[c.id] = c.quantity;
-    });
-    let response = await postFetcher("/api/update-user-info", {
-      id,
-      data: result,
-    });
-    if (response.ok) {
-      let data = await response.json();
-      return data.data.id;
-    }
-    throw "Error verifying payment";
-  },
-  async verifyCoupon(coupon: string) {
-    let response = await postFetcher("/api/verify-coupon", { code: coupon });
-    if (response.ok) {
-      let data = await response.json();
-      return data.data;
-    }
-    throw "Error verifying coupon";
-  },
-  createIssuedRequest: async params => {
+  createIssuedRequest: async (params) => {
     let result = await fetch("/api/home-tutoring/create-issued-request", {
       method: "POST",
       body: JSON.stringify(params),
       headers: {
-        "Content-type": "application/json"
-      }
+        "Content-type": "application/json",
+      },
     });
     if (result.status < 400) {
       let o = await result.json();
@@ -224,15 +174,6 @@ const clientAdapter = {
     }
     throw "Failed to update whatsapp number";
   },
-<<<<<<< HEAD
-  initializeRequestData: async () => {
-    let requestData = storage.get(REQUEST_KEY, {});
-    return [requestData, []];
-  },
-  onSubmit: async (key, data, splitRequests) => {
-    return {}
-  }
-=======
 
   initializeRequestData: async () => {
     let requestData = storage.get(REQUEST_KEY, {});
@@ -253,8 +194,8 @@ const clientAdapter = {
         ...(requestData.lessonDetails || {}),
         lessonSchedule: {
           ...((requestData.lessonDetails || {}).lessonSchedule || {}),
-          ...data
-        }
+          ...data,
+        },
       };
     }
     if (key === "lesson-location") {
@@ -264,17 +205,17 @@ const clientAdapter = {
         state: data.state,
         address: data.address,
         country: data.country,
-        region: data.region
+        region: data.region,
       };
       requestData.lessonDetails = {
         ...(requestData.lessonDetails || {}),
-        lessonType: data.lessonType
+        lessonType: data.lessonType,
       };
     }
     if (key === "contact-information") {
       requestData.contactDetails = {
         ...(requestData.contactDetails || {}),
-        ...data
+        ...data,
       };
     }
     if (key == "client-schedule") {
@@ -285,29 +226,29 @@ const clientAdapter = {
       requestData.missingTutorSplitRequests = excludeSplit;
       if (excludeSplit.length > 0) {
         let { childDetails } = requestData;
-        let withSubjects = childDetails.map(o => ({
+        let withSubjects = childDetails.map((o) => ({
           name: o.name,
-          subjects: o.classDetail.subjects
+          subjects: o.classDetail.subjects,
         }));
         let missingChild = excludeSplit
-          .map(o => {
-            return o.names.map(x => ({ name: x, subject: o.subjectGroup }));
+          .map((o) => {
+            return o.names.map((x) => ({ name: x, subject: o.subjectGroup }));
           })
           .flat();
         let childCopy = JSON.parse(JSON.stringify(childDetails));
-        let mapped = childCopy.map(c => {
+        let mapped = childCopy.map((c) => {
           let subjects = missingChild
-            .filter(o => o.name === c.name)
-            .map(o => o.subject)
+            .filter((o) => o.name === c.name)
+            .map((o) => o.subject)
             .flat();
           return {
             ...c,
             classDetail: {
               ...c.classDetail,
               subjects: c.classDetail.subjects.filter(
-                o => !subjects.includes(o)
-              )
-            }
+                (o) => !subjects.includes(o)
+              ),
+            },
           };
         });
         requestData.childDetails = mapped;
@@ -362,27 +303,27 @@ const clientAdapter = {
     }
   },
 
-  getNeighboringArea: async region => {
+  getNeighboringArea: async (region) => {
     let response = await fetch(
       `/api/get-neighboring-regions?region=${region}`,
       {
         method: "GET",
         headers: {
-          "Content-type": "application/json"
-        }
+          "Content-type": "application/json",
+        },
       }
     );
     let result = await response.json();
     return result.data;
   },
-  checkIfTutorsExists: async params => {
+  checkIfTutorsExists: async (params) => {
     let requestData = storage.get(REQUEST_KEY, {});
     const response = await fetch("/api/home-tutoring/check-for-tutors", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(requestData)
+      body: JSON.stringify(requestData),
     });
 
     if (response.ok) {
@@ -391,21 +332,18 @@ const clientAdapter = {
       //cache the original result then return the length of each results
       sStorage.set(`search-${params.slug}`, result);
       //cached result would be used on the search page.
-      result = result.map(o => o.length);
+      result = result.map((o) => o.length);
 
       let map = {};
       result.forEach((o, i) => {
         map[o] = i;
       });
-      let mrr = result.filter(o => o === 0).map(x => map[x]);
+      let mrr = result.filter((o) => o === 0).map((x) => map[x]);
       return mrr;
     }
     throw "Error booking lessons";
     return [];
   },
-
->>>>>>> c4cd98422026e695e3f9755a1c2abd52b1da581d
 };
 
 export default clientAdapter;
-
