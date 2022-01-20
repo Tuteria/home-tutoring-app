@@ -6,8 +6,8 @@ import storage, { isServer } from "@tuteria/shared-lib/src/local-storage";
 import sessionS from "@tuteria/shared-lib/src/storage";
 import { observer } from "mobx-react-lite";
 import React, { useEffect, useState } from "react";
-import adapter, { useAuhenticationWrapper } from "../../server_utils/client";
-import serverAdapter from "../../server_utils/server";
+import adapter, { useAuhenticationWrapper } from "../../../server_utils/client";
+import serverAdapter from "../../../server_utils/server";
 
 const viewModel = RequestFlowStore.create({}, { adapter });
 

@@ -46,7 +46,12 @@ function decodedToken(existingTokenFromUrl, key = "tutorToken") {
 
 export const useAuhenticationWrapper = ({ store, base = "/hometutors" }) => {
   let { router, navigate } = usePrefetchHook({
-    routes: ["/request", "/checkout/[slug]", "/search/[slug]"],
+    routes: [
+      "/request",
+      "/checkout/[slug]",
+      "/search/[slug]",
+      "/request/[slug]",
+    ],
     base,
   });
   function getAndDecodeAccessToken() {
