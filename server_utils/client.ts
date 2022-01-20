@@ -109,6 +109,17 @@ const clientAdapter = {
   selectedTutorsKey: SELECTED_TUTORS_KEY,
   clientToken: CLIENT_TOKEN,
   decodedToken,
+  async savePricingInfo(requestData, paymentInfo) {
+    let response = await postFetcher(`/api/home-tutoring/save-request`, {
+      requestData,
+      paymentInfo,
+    });
+    if (response.status < 400) {
+      let { data } = await response.json();
+      return data;
+    }
+    throw "Could not save pricing info";
+  },
   createIssuedRequest: async (params) => {
     let result = await fetch("/api/home-tutoring/create-issued-request", {
       method: "POST",
@@ -343,6 +354,39 @@ const clientAdapter = {
     }
     throw "Error booking lessons";
     return [];
+  },
+  saveRequestToServer: async (isAdmin, slug) => {
+    let requestData = storage.get(REQUEST_KEY, {});
+    if (slug) {
+      requestData.slug = slug;
+    }
+    let dateSumitted = new Date();
+    let response = await fetch(`/api/home-tutoring/save-request`, {
+      method: "POST",
+      body: JSON.stringify({
+        requestData: {
+          ...requestData,
+          // completedDate: dateSumitted.toISOString,
+        },
+        isAdmin,
+      }),
+      headers: {
+        "Content-type": "application/json",
+      },
+    });
+    let { data: result } = await response.json();
+    if (result.access_token) {
+      decodedToken(result.access_token, CLIENT_TOKEN);
+    }
+    if (result.slug) {
+      // save the completed request to session storage so that we do not
+      // have to fetch on the search page if we can.
+      if (result) {
+        sStorage.set(`home-full-${result.slug}`, result);
+      }
+      return result.slug;
+    }
+    throw new Error("Error saving request");
   },
 };
 
