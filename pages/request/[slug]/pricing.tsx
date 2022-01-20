@@ -39,8 +39,9 @@ const NewPricingPage = ({ pricingInfo, requestData, slug }) => {
       onEditRequest={() => {
         navigate(`/request/${slug}`);
       }}
-      onSelectPlan={(plan, price) => {
-        console.log({ plan, price });
+      store={store}
+      onSubmit={() => {
+        navigate(`/`);
       }}
     />
   ) : null;

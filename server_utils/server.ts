@@ -85,14 +85,22 @@ async function getAcademicDataWithRadiusInfo() {
   return { result, rawAcademicData, state_with_radius, tutorCourses };
 }
 
-async function saveParentRequest(requestData, paymentInfo) {
+async function saveParentRequest(
+  requestData,
+  paymentInfo,
+  send_notice = false
+) {
   // need to reduce the information sent to the django server.
   requestData.splitRequests = requestData.splitRequests.map((o) => ({
     ...o,
     tutorData: undefined,
   }));
   if (paymentInfo) {
-    let result = await updateCompletedRequest(requestData, paymentInfo);
+    let result = await updateCompletedRequest(
+      requestData,
+      paymentInfo, //temporarily ensure the status is only on issued
+      send_notice
+    );
     return result;
   }
   return await saveCompletedRequest(requestData);
@@ -180,7 +188,11 @@ const serverAdapter = {
   },
 
   async saveParentRequest(requestData, paymentInfo, notifyTutors = false) {
-    let result = await saveParentRequest(requestData, paymentInfo);
+    let result = await saveParentRequest(
+      requestData,
+      paymentInfo,
+      notifyTutors
+    );
     return result;
   },
 

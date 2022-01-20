@@ -51,19 +51,28 @@ const useHometutoringRequestData = (store, academicData) => {
         setCompleteLoading(false);
       }
     }
+    let isAgent = getQueryVariable("is_agent");
     if (slug) {
       adapter
         .getClientRequest(slug, displayLoading === "true")
         .then((result) => {
+          let canProceed = false;
+          let msg = "Pls try placing a new request";
           if (!result) {
-            navigate("/");
+            msg = "Could not find request. Pls try placing a new one.";
             // } else if (result.status === "completed") {
             //   navigate(`/hometutors/search/${result.slug}`);
           } else if (
-            !["issued", "completed", "pending"].includes(result.status)
+            result.status !== "issued" &&
+            isAgent === "true"
+            // !["issued", "completed", "pending"].includes(result.status)
           ) {
-            navigate("/");
-          } else {
+            canProceed = true;
+            // navigate("/");
+          } else if (result.status === "issued") {
+            canProceed = true;
+          }
+          if (canProceed) {
             setCompleteLoading(false);
             setLoadingText("Retrieving Tutors...");
             let _requestData = { ...result.requestData, slug: result.slug };
@@ -88,6 +97,8 @@ const useHometutoringRequestData = (store, academicData) => {
                   setLoaded(true);
                 });
             }
+          } else {
+            navigate(`/?msg=${msg}`);
           }
         });
     }
@@ -123,19 +134,19 @@ const HomeTutoringRequestPage: React.FC<{
     return <LoadingStateForRequest text={loadingText} />;
   }
   function onFormSubmit() {
-    if (viewModel.splitRequests.length === viewModel.splitToExclude.length) {
-      navigate(`/u/requests/${viewModel.slug}`);
-    } else {
-      sessionS.clear(`home-${viewModel.slug}`);
-      viewModel
-        .saveRequestToServer()
-        .then(() => {
-          navigate(`/hometutors/search/${viewModel.slug}`);
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    }
+    // if (viewModel.splitRequests.length === viewModel.splitToExclude.length) {
+    //   navigate(`/u/requests/${viewModel.slug}`);
+    // } else {
+    sessionS.clear(`home-${viewModel.slug}`);
+    viewModel
+      .saveRequestToServer()
+      .then(() => {
+        navigate(`/request/${viewModel.slug}/pricing`);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+    // }
   }
   return (
     <OverlayRouter>

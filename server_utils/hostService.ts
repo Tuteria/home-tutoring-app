@@ -48,8 +48,8 @@ export async function saveInitializedRequest(requestData) {
       method: "POST",
       body: JSON.stringify(requestData),
       headers: {
-        "Content-type": "application/json"
-      }
+        "Content-type": "application/json",
+      },
     }
   );
   if (response.status < 400) {
@@ -66,8 +66,8 @@ export async function getNeighboringArea(region) {
     {
       method: "GET",
       headers: {
-        "Content-Type": "application/json"
-      }
+        "Content-Type": "application/json",
+      },
     }
   );
   if (response.status < 400) {
@@ -85,8 +85,8 @@ export async function saveCompletedRequest(requestData) {
       method: "POST",
       body: JSON.stringify({ requestData }),
       headers: {
-        "Content-type": "application/json"
-      }
+        "Content-type": "application/json",
+      },
     }
   );
   if (response.status < 400) {
@@ -96,17 +96,20 @@ export async function saveCompletedRequest(requestData) {
   throw new Error("Error from backend server");
 }
 
-
-export async function updateCompletedRequest(requestData, paymentInfo) {
+export async function updateCompletedRequest(
+  requestData,
+  paymentInfo,
+  new_pricing = false
+) {
   let { slug } = requestData;
   let response = await fetch(
     `${HOST}/new-flow/update-home-tutoring-request/${slug}`,
     {
       method: "POST",
-      body: JSON.stringify({ requestData, paymentInfo }),
+      body: JSON.stringify({ requestData, paymentInfo, new_pricing }),
       headers: {
-        "Content-type": "application/json"
-      }
+        "Content-type": "application/json",
+      },
     }
   );
   if (response.status < 400) {
