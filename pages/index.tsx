@@ -1,8 +1,9 @@
 import { OverlayRouter } from "@tuteria/shared-lib/src/components/OverlayRouter";
 import LandingPage from "@tuteria/shared-lib/src/new-request-flow/pages/LandingPage";
+import sessionS from '@tuteria/shared-lib/src/storage';
 import { LocationFieldStore } from "@tuteria/shared-lib/src/stores/location";
 import React from "react";
-import adapter from "../server_utils/client";
+import adapter, { useAuhenticationWrapper } from "../server_utils/client";
 import serverAdapter from "../server_utils/server";
 import { useToastHelper } from "../server_utils/util";
 
@@ -25,6 +26,7 @@ const useFetchRegion = () => {
   return [country, country_code];
 };
 const Home = ({ regions, countries }) => {
+  const { navigate } = useAuhenticationWrapper({ store });
   const [loadType, setLoadType] = React.useState("server");
   const [isLoading, setLoading] = React.useState(false);
   const { showErrorToast } = useToastHelper();
@@ -44,14 +46,15 @@ const Home = ({ regions, countries }) => {
     setLoading(true);
     adapter
       .createIssuedRequest(values)
-      // .then((o) => {
-      //   let discountCode = values.discount;
-      //   let url = `/request/${o.slug}?available=true`;
-      //   sessionS.set(`home-${o.slug}`, o);
-      //   if (discountCode && o.validDiscount == false) {
-      //     url = `${url}&validDiscount=false`;
-      //   }
-      // })
+      .then((o: any) => {
+        let discountCode = values.discount;
+        let url = `/request/${o.slug}?available=true`;
+        sessionS.set(`home-${o.slug}`, o);
+        if (discountCode && o.validDiscount == false) {
+          url = `${url}&validDiscount=false`;
+        }
+        navigate(url);
+      })
       .catch((error) => {
         setLoading(false);
         showErrorToast({ description: "Invalid phone number." });

@@ -50,21 +50,19 @@ const useHometutoringRequestData = (store, academicData) => {
       if (displayLoading === "true") {
         setCompleteLoading(false);
       }
-      console.log({ displayLoading });
     }
     if (slug) {
       adapter
         .getClientRequest(slug, displayLoading === "true")
         .then((result) => {
-          console.trace("DEBUGGER: ", result);
           if (!result) {
-            navigate("/hometutors");
+            navigate("/");
             // } else if (result.status === "completed") {
             //   navigate(`/hometutors/search/${result.slug}`);
           } else if (
             !["issued", "completed", "pending"].includes(result.status)
           ) {
-            navigate("/hometutors");
+            navigate("/");
           } else {
             setCompleteLoading(false);
             setLoadingText("Retrieving Tutors...");
