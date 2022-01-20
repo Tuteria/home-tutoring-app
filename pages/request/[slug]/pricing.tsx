@@ -41,20 +41,32 @@ const NewPricingPage = ({ pricingInfo, requestData, slug }) => {
       }}
       store={store}
       onSubmit={() => {
-        navigate(`/`);
+        navigate(`/request/${slug}/complete`);
       }}
     />
   ) : null;
 };
 
 export async function getServerSideProps({ params, query, res, req }) {
+  let isAgent = query.is_agent;
   let [pricingInfo, bookingInfo] = await Promise.all([
     serverAdapter.getPricingInfo(),
     serverAdapter.getRequestInfo(params.slug, true, true),
   ]);
+  let canProceed = false;
+  let msg = "Pls try placing a new request";
+  if (bookingInfo.status != "issued" && isAgent == "true") {
+    canProceed = true;
+  } else if (bookingInfo.status === "issued") {
+    canProceed = true;
+  }
   if (bookingInfo.requestData.splitRequests.length == 0) {
+    canProceed = false;
+    msg = "Incomplete request info. Pls try placing a new request";
+  }
+  if (!canProceed) {
     res.writeHead(302, {
-      Location: `/request`,
+      Location: `/?msg=${msg}`,
     });
     res.end();
   }
