@@ -2,6 +2,7 @@ import { OverlayRouter } from "@tuteria/shared-lib/src/components/OverlayRouter"
 import LandingPage from "@tuteria/shared-lib/src/new-request-flow/pages/LandingPage";
 import sessionS from '@tuteria/shared-lib/src/storage';
 import { LocationFieldStore } from "@tuteria/shared-lib/src/stores/location";
+import { useRouter } from "next/router";
 import React from "react";
 import adapter, { useAuhenticationWrapper } from "../server_utils/client";
 import serverAdapter from "../server_utils/server";
@@ -31,6 +32,7 @@ const Home = ({ regions, countries }) => {
   const [isLoading, setLoading] = React.useState(false);
   const { showErrorToast } = useToastHelper();
   const ipInfo = useFetchRegion();
+  const { query: { msg } } = useRouter()
   React.useEffect(() => {
     adapter.initializeLandingPage({ regions, countries });
     store.updateFields({
@@ -60,6 +62,7 @@ const Home = ({ regions, countries }) => {
         showErrorToast({ description: "Invalid phone number." });
       });
   }
+
   return (
     <OverlayRouter key={loadType}>
       <LandingPage
@@ -78,12 +81,14 @@ const Home = ({ regions, countries }) => {
           value: x.name,
           code: x.code2,
         }))}
+        displayBanner={Boolean(msg)}
+        bannerText={msg}
       />
     </OverlayRouter>
   );
 };
 
-export async function getStaticProps({}) {
+export async function getStaticProps({ }) {
   let [regions, countries] = await Promise.all([
     serverAdapter.getRegions(),
     serverAdapter.getCountries(),

@@ -360,13 +360,14 @@ const clientAdapter = {
     if (slug) {
       requestData.slug = slug;
     }
-    let dateSumitted = new Date();
+    if (!requestData.dateSubmitted) {
+      requestData.dateSubmitted = new Date().toISOString()
+    }
     let response = await fetch(`/api/home-tutoring/save-request`, {
       method: "POST",
       body: JSON.stringify({
         requestData: {
           ...requestData,
-          // completedDate: dateSumitted.toISOString,
         },
         isAdmin,
       }),
