@@ -31,7 +31,7 @@ const useHometutoringRequestData = (store, academicData) => {
   const [loaded, setLoaded] = useState(false);
   const [completeLoading, setCompleteLoading] = React.useState(true);
 
-  let [requestData, getRequestData] = React.useState(existing);
+  let [requestData, setRequestData] = React.useState(existing);
 
   let [discountFlag, setDiscountFlag] = useState(false);
   function validCoupon() {
@@ -81,7 +81,7 @@ const useHometutoringRequestData = (store, academicData) => {
               };
             }
             storage.set(adapter.requestKey, merged);
-            getRequestData(_requestData);
+            setRequestData(_requestData);
             // const academicData = storage.get(adapter.academicKey);
             if (academicData) {
               return store

@@ -197,6 +197,14 @@ const clientAdapter = {
     }
     throw "Failed to update whatsapp number";
   },
+  initializeRequestData: async () => {
+    let requestData = storage.get(REQUEST_KEY, {});
+    return [requestData, []];
+  },
+  onSubmit: async (key, data, splitRequests) => {
+    return {}
+  }
 };
 
 export default clientAdapter;
+
