@@ -26,20 +26,20 @@ const MyApp = ({ Component, pageProps: others }) => {
           <meta name="description" content={seo.description || "Description"} />
           <meta
             name="keywords"
-            content="IELTS Course for Nigerians,IELTS Training in Nigeria,IELTS Band 8 Course,IELTS practice tests in Nigeria,Online IELTS Materials"
+            content="Homework and studies,Exam Prep and Revision,General Home Lessons,Learnig,Get a Tutor,Hire a Tutor"
           />
 
-          <title>{seo.title || `Tuteria IELTS Band 8 Store`}</title>
+          <title>{seo.title || `Tuteria - Find the Perfect Tutor for your Child`}</title>
 
           <meta
             property="og:title"
-            content={seo.title || "Tuteria IELTS Band 8 Academy Store"}
+            content={seo.title || "Tuteria - Find the Perfect Tutor for your Child"}
           />
           <meta
             property="og:description"
             content={
               seo.description ||
-              "Taught by expert Nigerian IELTS examiners, we provide IELTS Video Course and Materials to Help Students get a Band 8.0 in their IELTS Exams Guaranteed"
+              "Help your child excel with expert lessons at home or online taught by the very best"
             }
           />
           <meta property="og:image" content={seo.image} />
