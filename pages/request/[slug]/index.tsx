@@ -74,7 +74,7 @@ const useHometutoringRequestData = (store, academicData) => {
           }
           if (canProceed) {
             setCompleteLoading(false);
-            setLoadingText("Retrieving Tutors...");
+            setLoadingText("Loading pricing page...");
             let _requestData = { ...result.requestData, slug: result.slug };
             let existing = storage.get(adapter.requestKey, {});
             let merged = { ...existing, ..._requestData };

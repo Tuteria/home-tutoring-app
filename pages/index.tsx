@@ -1,6 +1,6 @@
 import { OverlayRouter } from "@tuteria/shared-lib/src/components/OverlayRouter";
 import LandingPage from "@tuteria/shared-lib/src/new-request-flow/pages/LandingPage";
-import sessionS from '@tuteria/shared-lib/src/storage';
+import sessionS from "@tuteria/shared-lib/src/storage";
 import { LocationFieldStore } from "@tuteria/shared-lib/src/stores/location";
 import { useRouter } from "next/router";
 import React from "react";
@@ -32,7 +32,9 @@ const Home = ({ regions, countries }) => {
   const [isLoading, setLoading] = React.useState(false);
   const { showErrorToast } = useToastHelper();
   const ipInfo = useFetchRegion();
-  const { query: { msg } } = useRouter()
+  const {
+    query: { msg },
+  } = useRouter();
   React.useEffect(() => {
     adapter.initializeLandingPage({ regions, countries });
     store.updateFields({
@@ -88,7 +90,7 @@ const Home = ({ regions, countries }) => {
   );
 };
 
-export async function getStaticProps({ }) {
+export async function getStaticProps({}) {
   let [regions, countries] = await Promise.all([
     serverAdapter.getRegions(),
     serverAdapter.getCountries(),
