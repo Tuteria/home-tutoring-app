@@ -34,8 +34,6 @@ const NewPricingPage = ({ pricingInfo, requestData, slug }) => {
   console.log(store.pricingInfo);
   return loaded ? (
     <PricingPage
-      pricingData={store.pricingInfo}
-      // pricingData={samplePricingData}
       onEditRequest={() => {
         navigate(`/request/${slug}`);
       }}
