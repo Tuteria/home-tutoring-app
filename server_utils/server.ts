@@ -11,16 +11,84 @@ import {
 import {
   getNewRequestDetail,
   getSelectedTutorSearchData,
+  getTutorSearchResults,
   saveCompletedRequest,
   saveInitializedRequest,
   updateCompletedRequest,
 } from "./hostService";
 import {
+  convertRequestToServerCompatibleFormat,
   convertServerResultToRequestCompatibleFormat,
   createSearchFilter,
   getTuteriaSearchSubject,
+  parseTransportData,
   trimSearchResult,
 } from "./utils";
+
+export const getCountryData = _country => {
+  let country = _country;
+  if (country.toLowerCase() === "united states of america") {
+    country = "United States";
+  }
+  return fetchAllCountries().then(allCountries => {
+    let foundCountry = allCountries.find(
+      x => x.name.toLowerCase() === country.toLowerCase()
+    );
+    if (foundCountry) {
+      const supportedCountries: any[] = [];
+
+      let foundCurrency = supportedCountries.find(
+        x => x.name.toLowerCase() === foundCountry.name.toLowerCase()
+      );
+      let r = null;
+      if (foundCurrency) {
+        r = { currencySymbol: foundCurrency.currency, dialCode: "" };
+        // resolve();
+      } else {
+        r = { currencySymbol: "$", dialCode: "" };
+        // resolve({ currencySymbol: "$", dialCode: "" });
+      }
+      if (!r) {
+        throw new Error("Can't find currency")
+      }
+      return r;
+    }
+  });
+  // return new Promise((resolve, reject) => {
+  // });
+};
+
+export function getCurrencyForCountry(country, kind = "to") {
+  const exchangeRates = {
+    "₦": { $: 200, "£": 250, "€": 250 },
+    "₵": { "₦": 0.01, $: 100, "£": 150, "€": 150 },
+    S: { "₦": 30, $: 100, "£": 150, "€": 150 }
+  };
+
+  let defaultCurrency = kind === "to" ? "$" : "₦";
+  let currencies = Object.values(exchangeRates).map(obj => Object.keys(obj));
+  let supportedCurrencies = [].concat.apply([], currencies);
+  supportedCurrencies = [...new Set(supportedCurrencies)];
+  let fromCurrencies = Object.keys(exchangeRates);
+  let result = defaultCurrency;
+  return getCountryData(country)
+    .then(destinationData => {
+      if (kind == "to") {
+        if (supportedCurrencies.includes(destinationData.currencySymbol)) {
+          result = destinationData.currencySymbol;
+        }
+      } else {
+        let v = destinationData;
+        if (fromCurrencies.includes(destinationData.currencySymbol)) {
+          result = destinationData.currencySymbol;
+        }
+      }
+      return result;
+    })
+    .catch(e => {
+      return defaultCurrency;
+    });
+}
 
 async function getTutorsData(
   request_slug,
@@ -228,6 +296,244 @@ const serverAdapter = {
       );
     });
     return data;
+  },
+  async getClientRequest({ requestObj, slug, academicInfo }) {
+    let promises = [this.getRequestInfo(slug, true, true)];
+    let { ...academicDataWithStateInfo } = academicInfo;
+    if (!academicInfo) {
+      promises.push(this.getAcademicDataWithRadiusInfo());
+    }
+    let result = await Promise.all(promises);
+    let full = result[0];
+    if (!academicInfo) {
+      academicDataWithStateInfo = result[1];
+    }
+    let requestData = requestObj;
+    if (!requestData) {
+      requestData = full.requestData;
+    }
+    let { specialities = [] } = parceAcademicData(
+      academicDataWithStateInfo.rawAcademicData
+    );
+    let { farePerKM, distanceThreshold } = parseTransportData(
+      academicDataWithStateInfo.state_with_radius,
+      requestData
+    );
+    let arr = [];
+    requestData.splitRequests.forEach(o => {
+      arr.push({
+        key: o.searchSubject,
+        values: specialities
+          .filter(b => b.subjects.includes(o.searchSubject))
+          .map(o => o.speciality)
+      });
+    });
+    // let requestData = await this.getClientRequest(slug, !clearCache, "all");
+    return {
+      requestData,
+      requestInfo: full,
+      academicDataWithStateInfo,
+      specialities: arr,
+      farePerKM,
+      distanceThreshold
+    };
+  },
+  async getSearchPageProps(slug, requestData, query) {
+    let requestInfo = requestData;
+    if (!requestInfo) {
+      let dd = await this.getRequestInfo(slug);
+      requestInfo = dd.requestData;
+    }
+    // when we support other currencies would account for thsi.
+    let currencyForCountry = await getCurrencyForCountry(
+      "Nigeria",
+      "from"
+    );
+    let requestFilters = requestInfo.filters || {};
+    let filters = {
+      gender: (query.gender || "male,female")
+        .split(",")
+        .map(o => o.toLowerCase()),
+      sortBy: query.sortBy || requestFilters.sortBy || "Recommended",
+      showPremium: (query.showPremium || "").toLowerCase() === "true",
+      lessonType: query.lessonType || requestFilters.lessonType || "physical",
+      minPrice: query.minPrice
+        ? parseFloat(query.minPrice)
+        : requestFilters.minPrice || 0,
+      maxPrice: query.maxPrice
+        ? parseFloat(query.maxPrice)
+        : requestFilters.maxPrice || 0,
+      educationDegrees: query.educationDegree
+        ? query.educationDegrees.split(",")
+        : requestFilters.educationDegrees || [],
+      educationCountries: query.educationCountries
+        ? query.educationCountries.split(",")
+        : requestFilters.educationCountries || [],
+      educationGrades: query.educationGrades
+        ? query.educationGrades.split(",")
+        : requestFilters.educationGrades || [],
+      minExperience: query.minExperience || requestFilters.minExperience || ""
+    };
+    return {
+      requestInfo: {
+        ...requestInfo,
+        filters,
+        slug
+      },
+      currencyForCountry,
+      access_token: query.act || null
+    };
+  },
+  getQualifiedTutors: async (
+    searchData,
+    academicDataWithStateInfo,
+    returnSpeciality = false
+  ) => {
+    let {
+      state_with_radius,
+      rawAcademicData,
+      tutorCourses
+    } = academicDataWithStateInfo;
+    let result = convertRequestToServerCompatibleFormat(
+      rawAcademicData,
+      searchData
+    );
+    let found_state = state_with_radius.find(o => o.state === searchData.state);
+    let radius = 10; // set default radius with code.
+    if (found_state) {
+      radius = found_state.radius;
+    }
+    result.radius = radius;
+    try {
+      let response = await getTutorSearchResults(result, "post");
+      let transformed = convertServerResultToRequestCompatibleFormat(
+        response,
+        rawAcademicData,
+        searchData.searchSubject,
+        result.faculties,
+        tutorCourses
+      ).filter(o => o.subject.tuteriaName);
+
+      if (returnSpeciality) {
+        return { transformed, specialities: result.faculties };
+      }
+      return transformed;
+    } catch (error) {
+      throw error;
+    }
+  },
+  async buildSearchFilterAndFetchTutors(
+    requestData,
+    academicDataWithStateInfo,
+    rank = false,
+    index = 0,
+    includePending = false
+  ) {
+    let searchData = createSearchFilter(requestData, index);
+    let result = await this.getQualifiedTutors(
+      searchData,
+      academicDataWithStateInfo,
+      true
+    );
+    if (rank) {
+      return result;
+    }
+    let options = await getSearchConfig();
+    if (includePending) {
+      options.removeMultiplePendingJobs = false;
+    }
+    return trimSearchResult(
+      result.transformed,
+      [],
+      requestData,
+      requestData.splitRequests[index],
+      result.specialities,
+      [],
+      rank,
+      options
+    );
+  },
+  async getSearchPageResult({ slug, requestObj, query, academicInfo }) {
+    let {
+      requestData,
+      requestInfo: fullRequestData,
+      academicDataWithStateInfo,
+      specialities,
+      farePerKM = 50,
+      distanceThreshold = 5
+    } = await this.getClientRequest({ requestObj, slug, academicInfo });
+    try {
+      let [
+        { access_token, currencyForCountry, requestInfo },
+        tutorsData,
+        firstSearch
+      ] = await Promise.all([
+        this.getSearchPageProps(slug, requestData, query),
+        this.getTutorsData(slug, requestData, academicDataWithStateInfo),
+        this.buildSearchFilterAndFetchTutors(
+          requestData,
+          academicDataWithStateInfo,
+          false,
+          0,
+          query.pendingRequest === "include"
+        )
+      ]);
+      let canViewDiscount = true;
+      let { paymentInfo } = fullRequestData;
+      if (
+        paymentInfo &&
+        paymentInfo.timeSubmitted &&
+        paymentInfo.appliedDiscount
+      ) {
+        let elapsed = new Date(paymentInfo.timeSubmitted);
+        elapsed.setHours(elapsed.getHours() + 2);
+        if (elapsed < new Date()) {
+          canViewDiscount = false;
+        }
+      }
+      let lessonPayments = fullRequestData.paymentInfo?.lessonPayments || [];
+      let tutorPrices = lessonPayments.map(x => ({
+        tutorId: x.tutor.userId,
+        rate: x.tutor.subject.hourlyRate
+      }));
+      tutorsData = tutorsData.map(o => {
+        if (o) {
+          let t = tutorPrices.find(x => x.tutorId === o.userId);
+          if (t) {
+            o.subject.hourlyRate = t.rate;
+          }
+        }
+        return o;
+      });
+      // let firstSearchIds = firstSearch.map((o) => o.userId);
+      // tutorsData.forEach((tt) => {
+      //   if (tt) {
+      //     if (!firstSearchIds.includes(tt.userId)) {
+      //       firstSearch = [tt, ...firstSearch];
+      //     }
+      //   }
+      // });
+      return {
+        status: fullRequestData.status,
+        requestInfo,
+        tutorPrices,
+        access_token,
+        tutorsData,
+        currencyForCountry,
+        slug,
+        firstSearch,
+        coupon: fullRequestData.paymentInfo?.discountCode || "",
+        agent: fullRequestData.agent,
+        tutor_responses: fullRequestData.tutor_responses || [],
+        canViewDiscount,
+        specialities,
+        farePerKM,
+        distanceThreshold
+      };
+    } catch (error) {
+      console.trace(error);
+      throw error;
+    }
   },
 };
 

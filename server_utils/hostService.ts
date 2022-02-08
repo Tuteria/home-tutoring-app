@@ -118,3 +118,26 @@ export async function updateCompletedRequest(
   }
   throw new Error("Error from backend server");
 }
+
+export async function getTutorSearchResults(searchParams, kind = "get") {
+  let response = null;
+
+  if (kind == "post") {
+    response = await fetch(`${HOST}/new-flow/search`, {
+      method: "POST",
+      body: JSON.stringify(searchParams),
+      headers: {
+        "Content-type": "application/json"
+      }
+    });
+  } else {
+    response = await fetch(
+      `${HOST}/new-flow/search?` + new URLSearchParams(searchParams)
+    );
+  }
+  if (response.status < 400) {
+    let data = await response.json();
+    return data.data;
+  }
+  throw new Error("Error from backend server.");
+}
