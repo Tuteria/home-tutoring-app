@@ -12,6 +12,7 @@ import {
   getNewRequestDetail,
   getSelectedTutorSearchData,
   getTutorSearchResults,
+  getTutorsInPool,
   saveCompletedRequest,
   saveInitializedRequest,
   updateCompletedRequest,
@@ -416,6 +417,30 @@ const serverAdapter = {
 
       if (returnSpeciality) {
         return { transformed, specialities: result.faculties };
+      }
+      return transformed;
+    } catch (error) {
+      throw error;
+    }
+  },
+  getTutorsInPool: async (slug, returnSpeciality = false) => {
+    let academicDataWithStateInfo = await getAcademicDataWithRadiusInfo()
+    let {
+      rawAcademicData,
+      tutorCourses
+    } = academicDataWithStateInfo;
+    try {
+      let response = await getTutorsInPool(slug);
+      let transformed = convertServerResultToRequestCompatibleFormat(
+        response,
+        rawAcademicData,
+        "",
+        [],
+        tutorCourses
+      ).filter(o => o.subject.tuteriaName);
+
+      if (returnSpeciality) {
+        return { transformed, specialities: [] };
       }
       return transformed;
     } catch (error) {

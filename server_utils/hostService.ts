@@ -141,3 +141,12 @@ export async function getTutorSearchResults(searchParams, kind = "get") {
   }
   throw new Error("Error from backend server.");
 }
+
+export async function getTutorsInPool(slug) {
+  let response = await fetch(`${HOST}/new-flow/pool-tutors/${slug}`)
+  if (response.status < 400) {
+    let data = await response.json();
+    return data.data;
+  }
+  throw new Error("Error from backend server");
+}
