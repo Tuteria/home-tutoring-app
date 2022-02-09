@@ -1,5 +1,6 @@
 import storage, { isServer } from "@tuteria/shared-lib/src/local-storage";
 import sStorage from "@tuteria/shared-lib/src/storage";
+import { resolveCurrencyFromCountry } from "@tuteria/shared-lib/src/utils/hooks";
 import jwt_decode from "jwt-decode";
 import { useEffect } from "react";
 import { usePrefetchHook } from "./util";
@@ -389,6 +390,28 @@ const clientAdapter = {
     }
     throw new Error("Error saving request");
   },
+  resolveCurrencyFromCountry: resolveCurrencyFromCountry,
+  getTestimonials: async tutorId => {
+    let key = `testimonials-${tutorId}`;
+    let rr = sStorage.get(key, {});
+    if (Object.keys(rr).length > 0) {
+      return rr;
+    }
+    let response = await postFetcher(`/api/home-tutoring/get-testimonials`, { slug: tutorId })
+    // let response = await fetch(`/api/home-tutoring/get-testimonials`, {
+    //   method: "POST",
+    //   body: JSON.stringify({ slug: tutorId }),
+    //   headers: {
+    //     "Content-type": "application/json"
+    //   }
+    // });
+    let result = await response.json();
+    let ss = result.data;
+    sStorage.set(key, ss);
+    return ss;
+  },
+
+
 };
 
 export default clientAdapter;

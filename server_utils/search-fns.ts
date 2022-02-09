@@ -311,7 +311,7 @@ export function getRelevantScoreExcludingPrice(
     function getWordMatchCount(tutorObjKey = "") {
       let matchCount = 0;
       let mainText = tutor.subject[tutorObjKey].slice(0, 150).split(" ");
-      let searchString = `${searchObj.purposes.join(" ")} ${
+      let searchString = `${(searchObj.purposes || []).join(" ")} ${
         searchObj.searchSubject
       } ${tutorData.education[0].course}`;
 

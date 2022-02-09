@@ -312,7 +312,7 @@ export function convertServerResultToRequestCompatibleFormat(
       ],
       subject: {
         ...o.subject,
-        name: searchSubject,
+        name: searchSubject || o.subject.name,
         tuteriaName: o.subject.name || null,
         related: o.subject.related || [],
         // related: revertToClientSubject(tuteriaSubjects, o.subject.name) // uses the same mapping used by the search

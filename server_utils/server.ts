@@ -13,6 +13,7 @@ import {
   getSelectedTutorSearchData,
   getTutorSearchResults,
   getTutorsInPool,
+  getTutorTestimonialAndCerfitications,
   saveCompletedRequest,
   saveInitializedRequest,
   updateCompletedRequest,
@@ -423,29 +424,45 @@ const serverAdapter = {
       throw error;
     }
   },
-  getTutorsInPool: async (slug, returnSpeciality = false) => {
-    let academicDataWithStateInfo = await getAcademicDataWithRadiusInfo()
+  transformSearch(response: any[], academicDataWithStateInfo, { lessonDetails, contactDetails, splitRequests }) {
     let {
       rawAcademicData,
       tutorCourses
     } = academicDataWithStateInfo;
-    try {
-      let response = await getTutorsInPool(slug);
-      let transformed = convertServerResultToRequestCompatibleFormat(
-        response,
-        rawAcademicData,
-        "",
-        [],
-        tutorCourses
-      ).filter(o => o.subject.tuteriaName);
+    let transformed = convertServerResultToRequestCompatibleFormat(
+      response,
+      rawAcademicData,
+      "",
+      [],
+      tutorCourses
+    ).filter(o => o.subject.tuteriaName);
+    return trimSearchResult(
+      transformed,
+      [],
+      { lessonDetails, contactDetails },
+      splitRequests[0],
+      [],
+      [],
+      true,
+      {}
+    );
+  },
+  async getProfilesToBeSentToClient(slug, returnSpeciality = false) {
+    let [academicDataWithStateInfo, response] = await Promise.all([getAcademicDataWithRadiusInfo(),
+    getTutorsInPool(slug)])
 
-      if (returnSpeciality) {
-        return { transformed, specialities: [] };
+    let { tutors: result, requestInfo, agent, split_count } = response
+    let firstSearch = this.transformSearch(result, academicDataWithStateInfo, requestInfo)
+    let tutors = []
+    if (firstSearch.length > 0) {
+      if (split_count == 1) {
+        tutors = [firstSearch[0]]
+      } else {
+        tutors = firstSearch
       }
-      return transformed;
-    } catch (error) {
-      throw error;
+
     }
+    return { tutors, requestInfo, agent, firstSearch };
   },
   async buildSearchFilterAndFetchTutors(
     requestData,
@@ -560,6 +577,52 @@ const serverAdapter = {
       throw error;
     }
   },
+  getTestimonials: getTutorTestimonialAndCerfitications,
+  async getClientPaymentInfo(slug, tutor_slug) {
+    let { agent, firstSearch, requestInfo } = await this.getProfilesToBeSentToClient(slug)
+    const bookingInfo = {
+      slug: requestInfo.slug,
+      tutors: firstSearch.map(tutor => {
+        return {
+          userId: tutor.userId,
+          subject: {
+            hourlyRate: tutor.subject.hourlyRate,
+            hourlyDiscount: tutor.subject.hourlyDiscount || 0,
+            discountForExtraStudents: tutor.subject.discountForExtraStudents
+          },
+          newTutorDiscount: 0,
+          distance: 0,
+          firstName: tutor.firstName,
+          lastName: tutor.lastName,
+          photo: tutor.photo
+        }
+      }),
+      tuitionFee: 48000,
+      totalLessons: 12,
+      totalDiscount: 0,
+      transportFare: 0,
+      couponDiscount: 0,
+      paidSpeakingFee: true,
+      distanceThreshold: 20,
+      walletBalance: 0,
+      fareParKM: 25,
+      currency: "₦",
+      timeSubmitted: new Date().toISOString(),
+    };
+    return {
+      agent,
+      tutors: firstSearch,
+      requestInfo: {
+        ...requestInfo, splitRequests: requestInfo.splitRequests.map((o, i) => {
+          return {
+            ...o,
+            tutorId: firstSearch[i].userId
+          }
+        })
+      },
+      bookingInfo
+    }
+  }
 };
 
 export default serverAdapter;

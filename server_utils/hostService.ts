@@ -142,11 +142,55 @@ export async function getTutorSearchResults(searchParams, kind = "get") {
   throw new Error("Error from backend server.");
 }
 
-export async function getTutorsInPool(slug) {
+export async function getTutorsInPool(slug: string) {
   let response = await fetch(`${HOST}/new-flow/pool-tutors/${slug}`)
   if (response.status < 400) {
     let data = await response.json();
     return data.data;
   }
   throw new Error("Error from backend server");
+}
+
+export async function getTutorTestimonialAndCerfitications(tutorSlug: string) {
+  let response = await fetch(`${HOST}/new-flow/tutor-reviews/${tutorSlug}`);
+  if (response.status < 400) {
+    let data = await response.json();
+    return data.data;
+  }
+  throw new Error("Error from backend server.");
+}
+
+export async function createPaymentOrder(data: { slug: string; tutor: string; amount: number }) {
+  let response = await fetch(`${HOST}/new-flow/create-client-order/${data.slug}`, {
+    method: "POST",
+    body: JSON.stringify({
+      tutor: data.tutor,
+      amount: data.amount
+    }),
+    headers: {
+      "Content-type": "application/json"
+    }
+  })
+  if (response.status < 400) {
+    let data = await response.json();
+    return data.data;
+  }
+  throw new Error("Error from backend server.");
+}
+
+export async function updatePaidRequest(data: { slug: string; amount: number }) {
+  let response = await fetch(`${HOST}/new-flow/update-client-order/${data.slug}`, {
+    method: "POST",
+    body: JSON.stringify({
+      amount: data.amount
+    }),
+    headers: {
+      "Content-type": "application/json"
+    }
+  })
+  if (response.status < 400) {
+    let data = await response.json();
+    return data.data;
+  }
+  throw new Error("Error from backend server.");
 }
