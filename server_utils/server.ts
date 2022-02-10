@@ -435,6 +435,8 @@ const serverAdapter = {
       "",
       [],
       tutorCourses
+      // )
+      // transformed = transformed.filter(o => o.subject.name);
     ).filter(o => o.subject.tuteriaName);
     return trimSearchResult(
       transformed,

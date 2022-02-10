@@ -320,7 +320,7 @@ export function convertServerResultToRequestCompatibleFormat(
       // subjectList: [...new Set(tt)] // uses the academic subject mapping which might intentionally skip some subjects.
     };
   });
-  transformed = transformed.filter((r) => r.subject.hourlyRate > 0);
+  transformed = transformed.filter((r) => r.subject.hourlyRate >= 0);
   // if (faculties.length > 0) {
   //   return transformed.filter((o) => {
   //     let r = intersection(faculties, o.specialities);
