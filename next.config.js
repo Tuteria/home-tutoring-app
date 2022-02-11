@@ -53,6 +53,9 @@ module.exports = withImages(
       basePath: process.env.BASE_PATH || "",
     },
     reactStrictMode: true,
+    typescript: {
+      ignoreBuildErrors: true,
+    },
   })
 );
 // );
