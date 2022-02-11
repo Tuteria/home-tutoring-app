@@ -584,21 +584,6 @@ const serverAdapter = {
     let { agent, firstSearch, requestInfo } = await this.getProfilesToBeSentToClient(slug)
     const bookingInfo = {
       slug: requestInfo.slug,
-      tutors: firstSearch.map(tutor => {
-        return {
-          userId: tutor.userId,
-          subject: {
-            hourlyRate: tutor.subject.hourlyRate,
-            hourlyDiscount: tutor.subject.hourlyDiscount || 0,
-            discountForExtraStudents: tutor.subject.discountForExtraStudents
-          },
-          newTutorDiscount: 0,
-          distance: 0,
-          firstName: tutor.firstName,
-          lastName: tutor.lastName,
-          photo: tutor.photo
-        }
-      }),
       tuitionFee: 48000,
       totalLessons: 12,
       totalDiscount: 0,
@@ -611,18 +596,23 @@ const serverAdapter = {
       currency: "₦",
       timeSubmitted: new Date().toISOString(),
     };
+    requestInfo = {
+      ...requestInfo, splitRequests: requestInfo.splitRequests.map((o, i) => {
+        return {
+          ...o,
+          tutorId: firstSearch[i].userId
+        }
+      })
+    }
     return {
       agent,
       tutors: firstSearch,
-      requestInfo: {
-        ...requestInfo, splitRequests: requestInfo.splitRequests.map((o, i) => {
-          return {
-            ...o,
-            tutorId: firstSearch[i].userId
-          }
-        })
-      },
-      bookingInfo
+      requestInfo,
+      bookingInfo,
+      tutorResponses: requestInfo.splitRequests.map(o => ({
+        status: 'accepted',
+        tutor_slug: o.tutorId,
+      }))
     }
   }
 };
