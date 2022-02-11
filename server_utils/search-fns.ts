@@ -313,7 +313,7 @@ export function getRelevantScoreExcludingPrice(
       let mainText = tutor.subject[tutorObjKey].slice(0, 150).split(" ");
       let searchString = `${(searchObj.purposes || []).join(" ")} ${
         searchObj.searchSubject
-      } ${tutorData.education[0].course}`;
+      } ${tutorData.education[0]?.course || ""}`;
 
       let searchStringArray = [...new Set(searchString.split(" "))];
 
