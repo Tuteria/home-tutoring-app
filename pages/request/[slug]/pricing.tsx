@@ -1,5 +1,6 @@
 import { PricingPage } from "@tuteria/shared-lib/src/home-tutoring/request-flow/PricingPage";
 import { ClientRequestStore } from "@tuteria/shared-lib/src/home-tutoring/request-flow/store";
+import { SearchStore } from "@tuteria/shared-lib/src/stores";
 import React from "react";
 import adapter from "../../../server_utils/client";
 import serverAdapter from "../../../server_utils/server";
@@ -16,28 +17,29 @@ function getQueryVariable(variable) {
   }
   console.log("Query variable %s not found", variable);
 }
-const store = ClientRequestStore.create({}, { adapter });
+const store = SearchStore.create({}, { adapter });
 const NewPricingPage = ({ pricingInfo, requestData, slug }) => {
   const [loaded, setLoaded] = React.useState(false);
   let { navigate } = usePrefetchHook({
     routes: ["/request/[slug]"],
   });
   React.useEffect(() => {
-    store.mapToStore(requestData, {
-      paymentInfo: {},
-      tutorsData: [],
+    store.initializeClientRequest({
+      requestInfo: requestData,
       tutorResponses: [],
       pricingInfo,
+      bookingInfo: {},
     });
+    // store.mapToStore(rO
     setLoaded(true);
   }, []);
-  console.log(store.pricingInfo);
+  console.log(store.clientRequest.pricingInfo);
   return loaded ? (
     <PricingPage
       onEditRequest={() => {
         navigate(`/request/${slug}`);
       }}
-      store={store}
+      store={store.clientRequest}
       onSubmit={() => {
         navigate(`/request/${slug}/complete`);
       }}

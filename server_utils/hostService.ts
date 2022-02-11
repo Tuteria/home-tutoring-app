@@ -214,7 +214,7 @@ export async function generatePaymentJson(paymentRequest) {
     if (result.status) {
       let { payment_obj, processor_button_info } = result.data;
       let selectedCurrency = getCurrency(processor_button_info.currency);
-      let user_details = {
+      let user_details: any = {
         key: payment_obj.key,
         redirect_url: payment_obj.redirect_url,
         kind: PAYMENT_KIND,
