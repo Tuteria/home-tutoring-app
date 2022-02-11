@@ -103,6 +103,26 @@ export const useAuhenticationWrapper = ({ store, base = "" }) => {
   return { router, navigate };
 };
 
+
+async function generateInvoice(
+  amountToBePaid,
+  paymentInfo,
+  requestInfo,
+  kind = "full"
+) {
+  let response = await postFetcher(`/api/home-tutoring/generate-payment-invoice`, {
+    amount: amountToBePaid,
+    paymentInfo,
+    requestInfo,
+    kind
+  })
+
+  if (response.ok) {
+    let result = await response.json();
+    return result.data.data;
+  }
+  throw "Error generating invoice";
+}
 const clientAdapter = {
   regionKey: REGION_KEY,
   countryKey: COUNTRY_KEY,
@@ -411,6 +431,61 @@ const clientAdapter = {
     return ss;
   },
 
+  generateInvoice: generateInvoice,
+  generateSpeakingInvoice: generateInvoice,
+  verifyPayment: async (paystackUrl, paymentInfo) => {
+    //pull amount from url
+    let response = await postFetcher(`/api/paystack/verify-client-payment`, {
+      paystackUrl, paymentInfo, kind: "payment"
+    })
+    if (response.status < 400) {
+      let { data }: any = response.json();
+      return data
+    }
+    throw "Could not verify payment";
+  },
+  verifySpeakingFee: async (paystackUrl, paymentInfo) => {
+    let response = await postFetcher(`/api/paystack/verify-client-payment`, {
+      paystackUrl, paymentInfo, kind: "speaking-fee"
+    });
+    if (response.status < 400) {
+      let { data }: any = response.json();
+      return data
+    }
+    throw "Could not verify payment";
+  },
+  async onTutorsSelected(data, paymentInfo) {
+    // let currentUser = this.getClientInfo();
+    let notifyTutors = true;
+    // if (currentUser.is_staff) {
+    //   notifyTutors = false;
+    // }
+    let response = await postFetcher(`/api/home-tutoring/save-request`, {
+      requestData: { ...data, pendingCompleteDate: new Date().toISOString() },
+      paymentInfo: {
+        ...paymentInfo,
+        timeSubmitted: new Date().toISOString()
+      },
+      notifyTutors,
+      // isAdmin: currentUser.is_staff
+    });
+    if (response.status < 400) {
+      let result = await response.json();
+      // if (result.data) {
+      //   sessionS.set(`home-full-${result.slug}`, result.data);
+      // }
+      return result.data.slug;
+    }
+    throw "Error saving request on backend";
+  },
+  async createPaymentOrder(slug, tutor, amount) {
+    let response = await postFetcher(`/api/home-tutoring/create-payment-order`, { slug, tutor, amount })
+    if (response.ok) {
+      let result = await response.json()
+      return result.data
+    }
+    throw "Error creating payment order"
+  }
 
 };
 

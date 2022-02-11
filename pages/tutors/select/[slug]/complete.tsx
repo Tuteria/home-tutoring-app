@@ -14,7 +14,14 @@ const CompletePage: React.FC<{
   requestInfo: any;
   pricingInfo: any;
   tutorResponses: any[];
-}> = ({ bookingInfo, tutors, requestInfo, tutorResponses, pricingInfo }) => {
+}> = ({
+  bookingInfo,
+  tutors,
+  requestInfo,
+  tutorResponses,
+  pricingInfo,
+  agent,
+}) => {
   return (
     <NewClientRequestPage
       store={store}
@@ -24,6 +31,7 @@ const CompletePage: React.FC<{
         tutorResponses,
         pricingInfo,
         bookingInfo,
+        agent,
       }}
     />
   );

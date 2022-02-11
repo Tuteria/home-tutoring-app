@@ -1,3 +1,5 @@
+import { getCurrency } from "./utils";
+
 export let HOST = process.env.HOST_ENDPOINT || "http://backup.tuteria.com:8000";
 
 //Tutor api service calls
@@ -193,4 +195,56 @@ export async function updatePaidRequest(data: { slug: string; amount: number }) 
     return data.data;
   }
   throw new Error("Error from backend server.");
+}
+
+export async function generatePaymentJson(paymentRequest) {
+  let PAYMENT_API =
+    process.env.PAYMENT_API || "https://payments-three.vercel.app";
+  let PAYMENT_KEY = process.env.PAYMENT_KEY || "ravepay_dev";
+  let PAYMENT_KIND = process.env.PAYMENT_KIND || "paystack";
+
+  let paymentUrl = `${PAYMENT_API}/build-payment-info/${PAYMENT_KEY}`;
+  let response = await fetch(paymentUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(paymentRequest)
+  });
+  if (response.status < 500) {
+    let result = await response.json();
+    if (result.status) {
+      let { payment_obj, processor_button_info } = result.data;
+      let selectedCurrency = getCurrency(processor_button_info.currency);
+      let user_details = {
+        key: payment_obj.key,
+        redirect_url: payment_obj.redirect_url,
+        kind: PAYMENT_KIND,
+        js_script: payment_obj.js_script
+      };
+      if (PAYMENT_KIND === "paystack") {
+        user_details = { ...user_details, ...processor_button_info };
+      } else {
+        user_details = {
+          ...user_details,
+          email: processor_button_info.customer_email,
+          first_name: processor_button_info.customer_firstname,
+          last_name: processor_button_info.customer_lastname,
+          phone_number: processor_button_info.customer_phone
+        };
+      }
+      return {
+        status: true,
+        data: {
+          order: processor_button_info.txref,
+          base_country: selectedCurrency.country,
+          currency: selectedCurrency.value,
+          amount: payment_obj.amount,
+          description: processor_button_info.custom_description,
+          title: processor_button_info.custom_title,
+          meta: processor_button_info.meta || [],
+          user_details
+        }
+      };
+    }
+    return result;
+  }
 }

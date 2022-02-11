@@ -9,6 +9,8 @@ import {
   getSearchConfig,
 } from "@tuteria/tuteria-data/src";
 import {
+  createPaymentOrder,
+  generatePaymentJson,
   getNewRequestDetail,
   getSelectedTutorSearchData,
   getTutorSearchResults,
@@ -17,8 +19,10 @@ import {
   saveCompletedRequest,
   saveInitializedRequest,
   updateCompletedRequest,
+  updatePaidRequest,
 } from "./hostService";
 import {
+  buildPaymentRequest,
   convertRequestToServerCompatibleFormat,
   convertServerResultToRequestCompatibleFormat,
   createSearchFilter,
@@ -177,6 +181,7 @@ async function saveParentRequest(
 }
 
 const serverAdapter = {
+  createPaymentOrder,
   getAcademicDataWithRadiusInfo,
   getTutorsData,
   getRequestInfo: async (slug, withAgent?: any, as_parent = false) => {
@@ -580,6 +585,25 @@ const serverAdapter = {
     }
   },
   getTestimonials: getTutorTestimonialAndCerfitications,
+  async generatePaymentInvoice({ amount, paymentInfo, requestInfo, kind }) {
+    try {
+      let paymentRequest = buildPaymentRequest(
+        amount,
+        paymentInfo,
+        requestInfo,
+        kind
+      );
+      let [gatewayJson, _] = await Promise.all([
+        generatePaymentJson(paymentRequest),
+        Promise.resolve({})
+        // this.fetchAndSaveParentRequest(requestInfo, paymentInfo, amount, kind)
+      ]);
+      return gatewayJson;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   async getClientPaymentInfo(slug, tutor_slug) {
     let { agent, firstSearch, requestInfo } = await this.getProfilesToBeSentToClient(slug)
     const bookingInfo = {
@@ -614,7 +638,23 @@ const serverAdapter = {
         tutor_slug: o.tutorId,
       }))
     }
-  }
+  },
+  async verifyPayment({ paystackUrl, paymentInfo, kind = "payment" }) {
+    //pull amount from url
+    let cleanedUrl = paystackUrl.split("?amount=")[1].split("&")[0] || "";
+    let response = await fetch(paystackUrl);
+    if (response.status < 500) {
+      let result = await response.json();
+      let amount = parseFloat(cleanedUrl) / 100;
+      if (kind == 'payment') {
+        await updatePaidRequest({ amount, slug: paymentInfo.slug })
+        // await confirmPayment(paymentInfo.slug, amount, kind, "false");
+
+      }
+      return { verified: true };
+    }
+    throw "Could not verify payment";
+  },
 };
 
 export default serverAdapter;
