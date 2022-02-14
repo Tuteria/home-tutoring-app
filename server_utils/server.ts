@@ -31,20 +31,20 @@ import {
   trimSearchResult,
 } from "./utils";
 
-export const getCountryData = _country => {
+export const getCountryData = (_country) => {
   let country = _country;
   if (country.toLowerCase() === "united states of america") {
     country = "United States";
   }
-  return fetchAllCountries().then(allCountries => {
+  return fetchAllCountries().then((allCountries) => {
     let foundCountry = allCountries.find(
-      x => x.name.toLowerCase() === country.toLowerCase()
+      (x) => x.name.toLowerCase() === country.toLowerCase()
     );
     if (foundCountry) {
       const supportedCountries: any[] = [];
 
       let foundCurrency = supportedCountries.find(
-        x => x.name.toLowerCase() === foundCountry.name.toLowerCase()
+        (x) => x.name.toLowerCase() === foundCountry.name.toLowerCase()
       );
       let r = null;
       if (foundCurrency) {
@@ -55,7 +55,7 @@ export const getCountryData = _country => {
         // resolve({ currencySymbol: "$", dialCode: "" });
       }
       if (!r) {
-        throw new Error("Can't find currency")
+        throw new Error("Can't find currency");
       }
       return r;
     }
@@ -68,17 +68,17 @@ export function getCurrencyForCountry(country, kind = "to") {
   const exchangeRates = {
     "₦": { $: 200, "£": 250, "€": 250 },
     "₵": { "₦": 0.01, $: 100, "£": 150, "€": 150 },
-    S: { "₦": 30, $: 100, "£": 150, "€": 150 }
+    S: { "₦": 30, $: 100, "£": 150, "€": 150 },
   };
 
   let defaultCurrency = kind === "to" ? "$" : "₦";
-  let currencies = Object.values(exchangeRates).map(obj => Object.keys(obj));
+  let currencies = Object.values(exchangeRates).map((obj) => Object.keys(obj));
   let supportedCurrencies = [].concat.apply([], currencies);
   supportedCurrencies = [...new Set(supportedCurrencies)];
   let fromCurrencies = Object.keys(exchangeRates);
   let result = defaultCurrency;
   return getCountryData(country)
-    .then(destinationData => {
+    .then((destinationData) => {
       if (kind == "to") {
         if (supportedCurrencies.includes(destinationData.currencySymbol)) {
           result = destinationData.currencySymbol;
@@ -91,7 +91,7 @@ export function getCurrencyForCountry(country, kind = "to") {
       }
       return result;
     })
-    .catch(e => {
+    .catch((e) => {
       return defaultCurrency;
     });
 }
@@ -327,12 +327,12 @@ const serverAdapter = {
       requestData
     );
     let arr = [];
-    requestData.splitRequests.forEach(o => {
+    requestData.splitRequests.forEach((o) => {
       arr.push({
         key: o.searchSubject,
         values: specialities
-          .filter(b => b.subjects.includes(o.searchSubject))
-          .map(o => o.speciality)
+          .filter((b) => b.subjects.includes(o.searchSubject))
+          .map((o) => o.speciality),
       });
     });
     // let requestData = await this.getClientRequest(slug, !clearCache, "all");
@@ -342,7 +342,7 @@ const serverAdapter = {
       academicDataWithStateInfo,
       specialities: arr,
       farePerKM,
-      distanceThreshold
+      distanceThreshold,
     };
   },
   async getSearchPageProps(slug, requestData, query) {
@@ -352,15 +352,12 @@ const serverAdapter = {
       requestInfo = dd.requestData;
     }
     // when we support other currencies would account for thsi.
-    let currencyForCountry = await getCurrencyForCountry(
-      "Nigeria",
-      "from"
-    );
+    let currencyForCountry = await getCurrencyForCountry("Nigeria", "from");
     let requestFilters = requestInfo.filters || {};
     let filters = {
       gender: (query.gender || "male,female")
         .split(",")
-        .map(o => o.toLowerCase()),
+        .map((o) => o.toLowerCase()),
       sortBy: query.sortBy || requestFilters.sortBy || "Recommended",
       showPremium: (query.showPremium || "").toLowerCase() === "true",
       lessonType: query.lessonType || requestFilters.lessonType || "physical",
@@ -379,16 +376,16 @@ const serverAdapter = {
       educationGrades: query.educationGrades
         ? query.educationGrades.split(",")
         : requestFilters.educationGrades || [],
-      minExperience: query.minExperience || requestFilters.minExperience || ""
+      minExperience: query.minExperience || requestFilters.minExperience || "",
     };
     return {
       requestInfo: {
         ...requestInfo,
         filters,
-        slug
+        slug,
       },
       currencyForCountry,
-      access_token: query.act || null
+      access_token: query.act || null,
     };
   },
   getQualifiedTutors: async (
@@ -396,16 +393,15 @@ const serverAdapter = {
     academicDataWithStateInfo,
     returnSpeciality = false
   ) => {
-    let {
-      state_with_radius,
-      rawAcademicData,
-      tutorCourses
-    } = academicDataWithStateInfo;
+    let { state_with_radius, rawAcademicData, tutorCourses } =
+      academicDataWithStateInfo;
     let result = convertRequestToServerCompatibleFormat(
       rawAcademicData,
       searchData
     );
-    let found_state = state_with_radius.find(o => o.state === searchData.state);
+    let found_state = state_with_radius.find(
+      (o) => o.state === searchData.state
+    );
     let radius = 10; // set default radius with code.
     if (found_state) {
       radius = found_state.radius;
@@ -419,7 +415,7 @@ const serverAdapter = {
         searchData.searchSubject,
         result.faculties,
         tutorCourses
-      ).filter(o => o.subject.tuteriaName);
+      ).filter((o) => o.subject.tuteriaName);
 
       if (returnSpeciality) {
         return { transformed, specialities: result.faculties };
@@ -429,11 +425,12 @@ const serverAdapter = {
       throw error;
     }
   },
-  transformSearch(response: any[], academicDataWithStateInfo, { lessonDetails, contactDetails, splitRequests }) {
-    let {
-      rawAcademicData,
-      tutorCourses
-    } = academicDataWithStateInfo;
+  transformSearch(
+    response: any[],
+    academicDataWithStateInfo,
+    { lessonDetails, contactDetails, splitRequests }
+  ) {
+    let { rawAcademicData, tutorCourses } = academicDataWithStateInfo;
     let transformed = convertServerResultToRequestCompatibleFormat(
       response,
       rawAcademicData,
@@ -442,7 +439,7 @@ const serverAdapter = {
       tutorCourses
       // )
       // transformed = transformed.filter(o => o.subject.name);
-    ).filter(o => o.subject.tuteriaName);
+    ).filter((o) => o.subject.tuteriaName);
     return trimSearchResult(
       transformed,
       [],
@@ -455,19 +452,24 @@ const serverAdapter = {
     );
   },
   async getProfilesToBeSentToClient(slug, returnSpeciality = false) {
-    let [academicDataWithStateInfo, response] = await Promise.all([getAcademicDataWithRadiusInfo(),
-    getTutorsInPool(slug)])
+    let [academicDataWithStateInfo, response] = await Promise.all([
+      getAcademicDataWithRadiusInfo(),
+      getTutorsInPool(slug),
+    ]);
 
-    let { tutors: result, requestInfo, agent, split_count } = response
-    let firstSearch = this.transformSearch(result, academicDataWithStateInfo, requestInfo)
-    let tutors = []
+    let { tutors: result, requestInfo, agent, split_count } = response;
+    let firstSearch = this.transformSearch(
+      result,
+      academicDataWithStateInfo,
+      requestInfo
+    );
+    let tutors = [];
     if (firstSearch.length > 0) {
       if (split_count == 1) {
-        tutors = [firstSearch[0]]
+        // tutors = [firstSearch[0]]
       } else {
-        tutors = firstSearch
+        tutors = firstSearch;
       }
-
     }
     return { tutors, requestInfo, agent, firstSearch };
   },
@@ -509,13 +511,13 @@ const serverAdapter = {
       academicDataWithStateInfo,
       specialities,
       farePerKM = 50,
-      distanceThreshold = 5
+      distanceThreshold = 5,
     } = await this.getClientRequest({ requestObj, slug, academicInfo });
     try {
       let [
         { access_token, currencyForCountry, requestInfo },
         tutorsData,
-        firstSearch
+        firstSearch,
       ] = await Promise.all([
         this.getSearchPageProps(slug, requestData, query),
         this.getTutorsData(slug, requestData, academicDataWithStateInfo),
@@ -525,7 +527,7 @@ const serverAdapter = {
           false,
           0,
           query.pendingRequest === "include"
-        )
+        ),
       ]);
       let canViewDiscount = true;
       let { paymentInfo } = fullRequestData;
@@ -541,13 +543,13 @@ const serverAdapter = {
         }
       }
       let lessonPayments = fullRequestData.paymentInfo?.lessonPayments || [];
-      let tutorPrices = lessonPayments.map(x => ({
+      let tutorPrices = lessonPayments.map((x) => ({
         tutorId: x.tutor.userId,
-        rate: x.tutor.subject.hourlyRate
+        rate: x.tutor.subject.hourlyRate,
       }));
-      tutorsData = tutorsData.map(o => {
+      tutorsData = tutorsData.map((o) => {
         if (o) {
-          let t = tutorPrices.find(x => x.tutorId === o.userId);
+          let t = tutorPrices.find((x) => x.tutorId === o.userId);
           if (t) {
             o.subject.hourlyRate = t.rate;
           }
@@ -577,7 +579,7 @@ const serverAdapter = {
         canViewDiscount,
         specialities,
         farePerKM,
-        distanceThreshold
+        distanceThreshold,
       };
     } catch (error) {
       console.trace(error);
@@ -595,7 +597,7 @@ const serverAdapter = {
       );
       let [gatewayJson, _] = await Promise.all([
         generatePaymentJson(paymentRequest),
-        Promise.resolve({})
+        Promise.resolve({}),
         // this.fetchAndSaveParentRequest(requestInfo, paymentInfo, amount, kind)
       ]);
       return gatewayJson;
@@ -605,7 +607,8 @@ const serverAdapter = {
   },
 
   async getClientPaymentInfo(slug, tutor_slug) {
-    let { agent, firstSearch, requestInfo } = await this.getProfilesToBeSentToClient(slug)
+    let { agent, firstSearch, requestInfo } =
+      await this.getProfilesToBeSentToClient(slug);
     const bookingInfo = {
       slug: requestInfo.slug,
       tuitionFee: 48000,
@@ -621,23 +624,24 @@ const serverAdapter = {
       timeSubmitted: new Date().toISOString(),
     };
     requestInfo = {
-      ...requestInfo, splitRequests: requestInfo.splitRequests.map((o, i) => {
+      ...requestInfo,
+      splitRequests: requestInfo.splitRequests.map((o, i) => {
         return {
           ...o,
-          tutorId: firstSearch[i].userId
-        }
-      })
-    }
+          tutorId: o.tutorId || firstSearch[i].userId,
+        };
+      }),
+    };
     return {
       agent,
       tutors: firstSearch,
       requestInfo,
       bookingInfo,
-      tutorResponses: requestInfo.splitRequests.map(o => ({
-        status: 'accepted',
+      tutorResponses: requestInfo.splitRequests.map((o) => ({
+        status: "accepted",
         tutor_slug: o.tutorId,
-      }))
-    }
+      })),
+    };
   },
   async verifyPayment({ paystackUrl, paymentInfo, kind = "payment" }) {
     //pull amount from url
@@ -646,10 +650,9 @@ const serverAdapter = {
     if (response.status < 500) {
       let result = await response.json();
       let amount = parseFloat(cleanedUrl) / 100;
-      if (kind == 'payment') {
-        await updatePaidRequest({ amount, slug: paymentInfo.slug })
+      if (kind == "payment") {
+        await updatePaidRequest({ amount, slug: paymentInfo.slug });
         // await confirmPayment(paymentInfo.slug, amount, kind, "false");
-
       }
       return { verified: true };
     }

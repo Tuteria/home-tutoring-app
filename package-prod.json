@@ -9,7 +9,7 @@
     "dev:debug:notify": "cross-env PAYMENT_API=http://localhost:8007 SCHEDULER_SERVICE=http://localhost:8000 PAYMENT_KIND=paystack HOST_ENDPOINT=https://staging-prod.tuteria.com PAYMENT_KEY=paystack_dev SECRET_KEY=staging_secret_101 ADMIN_EMAIL=gbozee@example.com ADMIN_PASSWORD=punnisher2321 node --inspect server.js",
     "dev:debug_local": "cross-env TEST_EMAIL=caracolasstore@gmail.com TEST_NUMBER=2348054133087 TEST_AGENT_ID=C025KQZ7NG1 SCHEDULER_SERVICE=http://staging-prod.tuteria.com:8092 PAYMENT_KIND=paystack HOST_ENDPOINT=http://127.0.0.1:8002 PAYMENT_KEY=paystack_dev SECRET_KEY=staging_secret_101 ADMIN_EMAIL=gbozee@example.com ADMIN_PASSWORD=punnisher2321 node --inspect server.js",
     "dev:prod": "cross-env PAYMENT_KEY=paystack_dev SECRET_KEY=staging_secret_101 ADMIN_EMAIL=gbozee@example.com ADMIN_PASSWORD=punnisher2321 node --inspect server.js",
-    "build": "cross-env HOST_ENDPOINT=https://staging-prod.tuteria.com next build",
+    "build": "cross-env DISABLE_TYPESCRIPT_ERRORS=true HOST_ENDPOINT=https://staging-prod.tuteria.com next build",
     "start": "cross-env NODE_ENV=production IS_DEVELOPMENT=development TEST_EMAIL=caracolasstore@gmail.com TEST_NUMBER=2348054133087 TEST_AGENT_ID=C025KQZ7NG1 SCHEDULER_SERVICE=http://staging-prod.tuteria.com:8092 PAYMENT_KIND=paystack HOST_ENDPOINT=https://staging-prod.tuteria.com PAYMENT_KEY=paystack_dev SECRET_KEY=staging_secret_101 ADMIN_EMAIL=gbozee@example.com ADMIN_PASSWORD=punnisher2321 next start",
     "start:prod": "node --require ./tracer.js ./node_modules/.bin/next start",
     "lint": "next lint"
@@ -32,7 +32,7 @@
     "jsonwebtoken": "^8.5.1",
     "jwt-decode": "^3.1.2",
     "next-pwa": "^5.2.23",
-    "@tuteria/shared-lib": "git+https://shared_token:ZY_2UskKCcprWpixb9Vc@gitlab.com/tuteria/v2/shared-lib.git#0.0.4h",
+    "@tuteria/shared-lib": "git+https://shared_token:ZY_2UskKCcprWpixb9Vc@gitlab.com/tuteria/v2/shared-lib.git#0.0.4i",
     "@tuteria/tuteria-data": "git+https://tuteria-data:sXyb-ixZzwjq7_7gX33p@gitlab.com/tuteria/v2/tuteria-data.git#0.0.2k",
     "next-transpile-modules": "git+https://github.com/gbozee/next-transpile-modules.git#2.3.2",
     "react": "^17.0.1",
