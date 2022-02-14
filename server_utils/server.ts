@@ -472,13 +472,16 @@ const serverAdapter = {
             ...o,
             tutorId: null,
           }));
+          if (requestInfo.splitRequests.length > 1) {
+            requestInfo.splitRequests = [requestInfo.splitRequests[0]];
+          }
         }
         // tutors = [firstSearch[0]]
       } else {
         tutors = firstSearch;
       }
     }
-    return { tutors, requestInfo, agent, firstSearch };
+    return { tutors, requestInfo, agent, firstSearch, split_count };
   },
   async buildSearchFilterAndFetchTutors(
     requestData,
@@ -614,7 +617,7 @@ const serverAdapter = {
   },
 
   async getClientPaymentInfo(slug, tutor_slug) {
-    let { agent, firstSearch, requestInfo } =
+    let { agent, firstSearch, requestInfo, split_count } =
       await this.getProfilesToBeSentToClient(slug, true);
     const bookingInfo = {
       slug: requestInfo.slug,
@@ -630,6 +633,9 @@ const serverAdapter = {
       currency: "₦",
       timeSubmitted: new Date().toISOString(),
     };
+    if (split_count === 1) {
+      requestInfo.splitRequests = [requestInfo.splitRequests[0]];
+    }
     requestInfo = {
       ...requestInfo,
       splitRequests: requestInfo.splitRequests.map((o, i) => {
