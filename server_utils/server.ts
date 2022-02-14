@@ -467,10 +467,12 @@ const serverAdapter = {
     // let tutorSelected = requestInfo.splitRequests
     if (firstSearch.length > 0) {
       if (split_count == 1) {
-        requestInfo.splitRequests = requestInfo.splitRequests.map((o) => ({
-          ...o,
-          tutorId: null,
-        }));
+        if (returnSpeciality === false) {
+          requestInfo.splitRequests = requestInfo.splitRequests.map((o) => ({
+            ...o,
+            tutorId: null,
+          }));
+        }
         // tutors = [firstSearch[0]]
       } else {
         tutors = firstSearch;
@@ -613,7 +615,7 @@ const serverAdapter = {
 
   async getClientPaymentInfo(slug, tutor_slug) {
     let { agent, firstSearch, requestInfo } =
-      await this.getProfilesToBeSentToClient(slug);
+      await this.getProfilesToBeSentToClient(slug, true);
     const bookingInfo = {
       slug: requestInfo.slug,
       tuitionFee: 48000,
