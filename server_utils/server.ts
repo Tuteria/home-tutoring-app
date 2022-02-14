@@ -464,8 +464,13 @@ const serverAdapter = {
       requestInfo
     );
     let tutors = [];
+    // let tutorSelected = requestInfo.splitRequests
     if (firstSearch.length > 0) {
       if (split_count == 1) {
+        requestInfo.splitRequests = requestInfo.splitRequests.map((o) => ({
+          ...o,
+          tutorId: null,
+        }));
         // tutors = [firstSearch[0]]
       } else {
         tutors = firstSearch;
