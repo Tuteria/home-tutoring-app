@@ -2,6 +2,8 @@ const withTM = require("next-transpile-modules");
 const withImages = require("next-images");
 const withPWA = require("next-pwa");
 const runtimeCaching = require("./cache");
+const DISABLE_TYPESCRIPT_ERRORS =
+  process.env("DISABLE_TYPESCRIPT_ERRORS") === "true";
 
 let transpileModules = [
   "tuteria-frontend-components",
@@ -54,7 +56,7 @@ module.exports = withImages(
     },
     reactStrictMode: true,
     typescript: {
-      ignoreBuildErrors: true,
+      ignoreBuildErrors: DISABLE_TYPESCRIPT_ERRORS,
     },
   })
 );

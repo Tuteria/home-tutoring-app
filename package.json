@@ -11,6 +11,7 @@
     "dev:debug_local": "cross-env DEVELOPER_ACCESS=true TEST_EMAIL=caracolasstore@gmail.com TEST_NUMBER=2348054133087 TEST_AGENT_ID=C025KQZ7NG1 SCHEDULER_SERVICE=http://staging-prod.tuteria.com:8092 PAYMENT_KIND=paystack HOST_ENDPOINT=http://127.0.0.1:8002 PAYMENT_KEY=paystack_dev SECRET_KEY=staging_secret_101 ADMIN_EMAIL=gbozee@example.com ADMIN_PASSWORD=punnisher2321 node --inspect server.js",
     "dev:prod": "cross-env PAYMENT_KEY=paystack_dev SECRET_KEY=staging_secret_101 ADMIN_EMAIL=gbozee@example.com ADMIN_PASSWORD=punnisher2321 node --inspect server.js",
     "build": "cross-env HOST_ENDPOINT=https://staging-prod.tuteria.com next build",
+    "build:local": "cross-env DISABLE_TYPESCRIPT_ERRORS=true HOST_ENDPOINT=https://staging-prod.tuteria.com next build",
     "start": "cross-env MEDIA_FORMAT=tuteria NODE_ENV=production IS_DEVELOPMENT=staging TEST_EMAIL=caracolasstore@gmail.com TEST_NUMBER=2348054133087 TEST_AGENT_ID=C025KQZ7NG1 SCHEDULER_SERVICE=http://staging-prod.tuteria.com:8092 PAYMENT_KIND=paystack HOST_ENDPOINT=https://staging-prod.tuteria.com PAYMENT_KEY=paystack_dev SECRET_KEY=staging_secret_101 ADMIN_EMAIL=gbozee@example.com ADMIN_PASSWORD=punnisher2321 next start",
     "start:prod": "node --require ./tracer.js ./node_modules/.bin/next start",
     "lint": "next lint"
