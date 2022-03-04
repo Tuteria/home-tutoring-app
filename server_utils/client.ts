@@ -560,13 +560,13 @@ const clientAdapter = {
     return searchFilters;
   },
   async initializeAdminSearch(slug) {
-    //   let response = await fetch(`/api/home-tutoring/get-request/${slug}`);
-    //   if (response.status < 400) {
-    //     let data = await response.json();
-    //     console.log("DATA!!!", data.data);
-    //     return data.data;
-    //   }
-    //   throw "Could not fetch client info";
+      let response = await fetch(`/api/home-tutoring/search/${slug}`);
+      if (response.status < 400) {
+        let data = await response.json();
+        console.log("DATA!!!", data.data);
+        return data.data;
+      }
+      throw "Could not fetch saerch result";
   },
   async getSearchResults(requestParameters: any) {
     let currentSearchData = TUTORSEARCHRESULT_DATA_TRIMED;
@@ -607,7 +607,7 @@ const clientAdapter = {
   },
   updateRequestParameters: async () => {},
   selectDefaultSubject: async (subject, userId) => {
-    return ({
+    return {
       hourlyRate: 3500,
       discountForExtraStudents: 60,
       name: subject,
@@ -615,7 +615,7 @@ const clientAdapter = {
       description: `I love ${subject} because I realized it is actually practical and it is a basis for every other course or subject which involves calculation.`,
       related: [subject],
       tuteriaName: subject,
-    });
+    };
   },
 };
 
