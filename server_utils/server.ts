@@ -7,6 +7,7 @@ import {
   getLocationInfoFromSheet,
   parceAcademicData,
   getSearchConfig,
+  getSupportedCountries,
 } from "@tuteria/tuteria-data/src";
 import {
   createPaymentOrder,
@@ -30,6 +31,11 @@ import {
   parseTransportData,
   trimSearchResult,
 } from "./utils";
+
+import {
+  SAMPLEREQUEST,
+  TUTORSEARCHRESULT_DATA,
+} from "../../../src/stories/new-request-flow/sampleData";
 
 export const getCountryData = (_country) => {
   let country = _country;
@@ -670,6 +676,41 @@ const serverAdapter = {
       return { verified: true };
     }
     throw "Could not verify payment";
+  },
+  getSupportedCountries,
+  async getRequestInfoForSearch(slug?: string) {
+    const sampleAgent = {
+      name: "Benita",
+      phone_number: "+2349095121865",
+      email: "benita@tuteria.com",
+      image: "https://ik.im@agekit.io/gbudoh/Team_Photos/Benita_LzsSfrfW0.jpg",
+    };
+    const { academicData } = await this.fetchAcademicData();
+    return {
+      serverInfo: {
+        agent: sampleAgent,
+        created: "2021-12-10T09:18:05.415Z",
+        modified: "2021-12-10T09:18:05.415Z",
+        status: "pending",
+        tutorRequestInfo: SAMPLEREQUEST.splitRequests[0],
+        rawRequest: {
+          budget: 70000,
+          hourlyRate: 4000,
+        },
+      },
+      requestInfo: {
+        ...SAMPLEREQUEST,
+        childDetails: [SAMPLEREQUEST.childDetails[0]],
+        splitRequests: [SAMPLEREQUEST.splitRequests[0]],
+      },
+      firstSearch: null,
+      tutors: [TUTORSEARCHRESULT_DATA[0]],
+      specialities: [
+        { key: "Primary Math", values: ["Engineering", "Sciences"] },
+      ],
+      academicData: academicData,
+      agent: sampleAgent,
+    };
   },
 };
 
