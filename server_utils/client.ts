@@ -3,7 +3,12 @@ import sStorage from "@tuteria/shared-lib/src/storage";
 import { resolveCurrencyFromCountry } from "@tuteria/shared-lib/src/utils/hooks";
 import jwt_decode from "jwt-decode";
 import { useEffect } from "react";
+import {
+  SAMPLEREQUEST,
+  TUTORSEARCHRESULT_DATA_TRIMED,
+} from "../../../src/stories/new-request-flow/sampleData";
 import { usePrefetchHook } from "./util";
+import { trimSearchResult } from "./utils";
 
 const REGION_KEY = "TEST-REGIONS-VICINITIES";
 const COUNTRY_KEY = "TEST-COUNTRIES";
@@ -103,19 +108,21 @@ export const useAuhenticationWrapper = ({ store, base = "" }) => {
   return { router, navigate };
 };
 
-
 async function generateInvoice(
   amountToBePaid,
   paymentInfo,
   requestInfo,
   kind = "full"
 ) {
-  let response = await postFetcher(`/api/home-tutoring/generate-payment-invoice`, {
-    amount: amountToBePaid,
-    paymentInfo,
-    requestInfo,
-    kind
-  })
+  let response = await postFetcher(
+    `/api/home-tutoring/generate-payment-invoice`,
+    {
+      amount: amountToBePaid,
+      paymentInfo,
+      requestInfo,
+      kind,
+    }
+  );
 
   if (response.ok) {
     let result = await response.json();
@@ -243,6 +250,21 @@ const clientAdapter = {
         ...(requestData.lessonDetails || {}),
         lessonType: data.lessonType,
       };
+    }
+    if (key === "children-schedule") {
+      const schedule = data.reduce(
+        (acc, el) => ({
+          ...acc,
+          ...el,
+          lessonDays: [...new Set(el.lessonDays.concat(acc.lessonDays || []))],
+        }),
+        {}
+      );
+      requestData.lessonDetails = {
+        ...(requestData.lessonDetails || {}),
+        lessonSchedule: schedule,
+      };
+      requestData.clientSchedule = data;
     }
     if (key === "contact-information") {
       requestData.contactDetails = {
@@ -382,7 +404,7 @@ const clientAdapter = {
       requestData.slug = slug;
     }
     if (!requestData.dateSubmitted) {
-      requestData.dateSubmitted = new Date().toISOString()
+      requestData.dateSubmitted = new Date().toISOString();
     }
     let response = await fetch(`/api/home-tutoring/save-request`, {
       method: "POST",
@@ -411,13 +433,15 @@ const clientAdapter = {
     throw new Error("Error saving request");
   },
   resolveCurrencyFromCountry: resolveCurrencyFromCountry,
-  getTestimonials: async tutorId => {
+  getTestimonials: async (tutorId) => {
     let key = `testimonials-${tutorId}`;
     let rr = sStorage.get(key, {});
     if (Object.keys(rr).length > 0) {
       return rr;
     }
-    let response = await postFetcher(`/api/home-tutoring/get-testimonials`, { slug: tutorId })
+    let response = await postFetcher(`/api/home-tutoring/get-testimonials`, {
+      slug: tutorId,
+    });
     // let response = await fetch(`/api/home-tutoring/get-testimonials`, {
     //   method: "POST",
     //   body: JSON.stringify({ slug: tutorId }),
@@ -436,21 +460,25 @@ const clientAdapter = {
   verifyPayment: async (paystackUrl, paymentInfo) => {
     //pull amount from url
     let response = await postFetcher(`/api/paystack/verify-client-payment`, {
-      paystackUrl, paymentInfo, kind: "payment"
-    })
+      paystackUrl,
+      paymentInfo,
+      kind: "payment",
+    });
     if (response.status < 400) {
       let { data }: any = response.json();
-      return data
+      return data;
     }
     throw "Could not verify payment";
   },
   verifySpeakingFee: async (paystackUrl, paymentInfo) => {
     let response = await postFetcher(`/api/paystack/verify-client-payment`, {
-      paystackUrl, paymentInfo, kind: "speaking-fee"
+      paystackUrl,
+      paymentInfo,
+      kind: "speaking-fee",
     });
     if (response.status < 400) {
       let { data }: any = response.json();
-      return data
+      return data;
     }
     throw "Could not verify payment";
   },
@@ -464,7 +492,7 @@ const clientAdapter = {
       requestData: { ...data, pendingCompleteDate: new Date().toISOString() },
       paymentInfo: {
         ...paymentInfo,
-        timeSubmitted: new Date().toISOString()
+        timeSubmitted: new Date().toISOString(),
       },
       notifyTutors,
       // isAdmin: currentUser.is_staff
@@ -479,14 +507,116 @@ const clientAdapter = {
     throw "Error saving request on backend";
   },
   async createPaymentOrder(slug, tutor, amount) {
-    let response = await postFetcher(`/api/home-tutoring/create-payment-order`, { slug, tutor, amount })
+    let response = await postFetcher(
+      `/api/home-tutoring/create-payment-order`,
+      { slug, tutor, amount }
+    );
     if (response.ok) {
-      let result = await response.json()
-      return result.data
+      let result = await response.json();
+      return result.data;
     }
-    throw "Error creating payment order"
-  }
+    throw "Error creating payment order";
+  },
+  createSearchFilter(requestData, searchIndex = 0) {
+    let {
+      filters = {},
+      lessonDetails: { lessonSchedule },
+      teacherKind,
+    } = requestData;
+    const request = requestData.splitRequests[searchIndex];
+    let lessonDays = request.lessonDays || [];
+    if (lessonDays.length === 0) {
+      lessonDays = lessonSchedule.lessonDays;
+    }
 
+    const contactInfo = requestData.contactDetails;
+    // also send down the booking days and time for active bookings.
+    // get the regions that are related to the request region and then
+    // include tutors that fall in said region.
+    // active booking lessonDays filter would happen on the client.
+    // send down exam preparation expreience which tallies with the purpose from the request.
+    // send down lesson preference i.e max no of hours etc.
+    const searchFilters = {
+      searchSubject: request.searchSubject, // priority 1. tutor must have this subject if not then it is not part of the result.
+      subjectGroup: request.subjectGroup.join(","), // most of the subjects in subjectGroup
+      // teacherOption: request.teacherOption,
+      specialNeeds: request.specialNeeds.filter((x) => x !== "None").join(","),
+      curriculum: request.curriculum.join(","), // must have all the curriculum
+      class: request.class.join(","), // must have selected all the classes.
+      lessonDays: lessonDays.join(","), // tutors that are free on all of the lessonDays
+      lessonTime: lessonSchedule.lessonTime, // must be available at this time.
+      region: contactInfo.region,
+      state: contactInfo.state,
+      vicinity: contactInfo.vicinity,
+      country: contactInfo.country,
+      teacherKind,
+      searchIndex,
+    };
+    let lessonType =
+      requestData.lessonDetails.lessonType || filters?.lessonType;
+    if (lessonType == "online") {
+      delete searchFilters.region;
+    }
+    return searchFilters;
+  },
+  async initializeAdminSearch(slug) {
+      let response = await fetch(`/api/home-tutoring/search/${slug}`);
+      if (response.status < 400) {
+        let data = await response.json();
+        console.log("DATA!!!", data.data);
+        return data.data;
+      }
+      throw "Could not fetch saerch result";
+  },
+  async getSearchResults(requestParameters: any) {
+    let currentSearchData = TUTORSEARCHRESULT_DATA_TRIMED;
+    let searchObj = SAMPLEREQUEST.splitRequests[0];
+    let result = trimSearchResult(
+      currentSearchData,
+      [],
+      SAMPLEREQUEST,
+      searchObj,
+      undefined,
+      []
+    );
+    return result;
+  },
+  fetchSearchResultFunc: async (
+    currentIndex,
+    requestData,
+    specialities,
+    tutorPoolOnly
+  ) => {
+    let currentSearchData = TUTORSEARCHRESULT_DATA_TRIMED;
+    let searchObj = requestData.splitRequests[currentIndex];
+    let result = trimSearchResult(
+      currentSearchData,
+      [],
+      requestData,
+      searchObj,
+      specialities,
+      []
+    );
+    if (tutorPoolOnly) {
+      return result.slice(result.length - 4);
+    }
+    return result;
+  },
+  editTutorInfo: async (key: string, data: any) => {
+    return "tutorToken";
+  },
+  updateRequestParameters: async () => {},
+  selectDefaultSubject: async (subject, userId) => {
+    return {
+      hourlyRate: 3500,
+      discountForExtraStudents: 60,
+      name: subject,
+      headline: `I teach ${subject} with practical/illustrative examples.`,
+      description: `I love ${subject} because I realized it is actually practical and it is a basis for every other course or subject which involves calculation.`,
+      related: [subject],
+      tuteriaName: subject,
+    };
+  },
 };
 
 export default clientAdapter;
