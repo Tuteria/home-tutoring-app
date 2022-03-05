@@ -2,6 +2,15 @@ import { getCurrency } from "./utils";
 
 export let HOST = process.env.HOST_ENDPOINT || "http://backup.tuteria.com:8000";
 
+async function postHelper(url, data, base = HOST) {
+  const response = await fetch(`${base}${url}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return response;
+}
+
 //Tutor api service calls
 export async function getSelectedTutorSearchData(params, request_slug) {
   let response = await fetch(`${HOST}/new-flow/search/${request_slug}`, {
@@ -129,8 +138,8 @@ export async function getTutorSearchResults(searchParams, kind = "get") {
       method: "POST",
       body: JSON.stringify(searchParams),
       headers: {
-        "Content-type": "application/json"
-      }
+        "Content-type": "application/json",
+      },
     });
   } else {
     response = await fetch(
@@ -145,7 +154,7 @@ export async function getTutorSearchResults(searchParams, kind = "get") {
 }
 
 export async function getTutorsInPool(slug: string) {
-  let response = await fetch(`${HOST}/new-flow/pool-tutors/${slug}`)
+  let response = await fetch(`${HOST}/new-flow/pool-tutors/${slug}`);
   if (response.status < 400) {
     let data = await response.json();
     return data.data;
@@ -162,17 +171,24 @@ export async function getTutorTestimonialAndCerfitications(tutorSlug: string) {
   throw new Error("Error from backend server.");
 }
 
-export async function createPaymentOrder(data: { slug: string; tutor: string; amount: number }) {
-  let response = await fetch(`${HOST}/new-flow/create-client-order/${data.slug}`, {
-    method: "POST",
-    body: JSON.stringify({
-      tutor: data.tutor,
-      amount: data.amount
-    }),
-    headers: {
-      "Content-type": "application/json"
+export async function createPaymentOrder(data: {
+  slug: string;
+  tutor: string;
+  amount: number;
+}) {
+  let response = await fetch(
+    `${HOST}/new-flow/create-client-order/${data.slug}`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        tutor: data.tutor,
+        amount: data.amount,
+      }),
+      headers: {
+        "Content-type": "application/json",
+      },
     }
-  })
+  );
   if (response.status < 400) {
     let data = await response.json();
     return data.data;
@@ -180,16 +196,22 @@ export async function createPaymentOrder(data: { slug: string; tutor: string; am
   throw new Error("Error from backend server.");
 }
 
-export async function updatePaidRequest(data: { slug: string; amount: number }) {
-  let response = await fetch(`${HOST}/new-flow/update-client-order/${data.slug}`, {
-    method: "POST",
-    body: JSON.stringify({
-      amount: data.amount
-    }),
-    headers: {
-      "Content-type": "application/json"
+export async function updatePaidRequest(data: {
+  slug: string;
+  amount: number;
+}) {
+  let response = await fetch(
+    `${HOST}/new-flow/update-client-order/${data.slug}`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        amount: data.amount,
+      }),
+      headers: {
+        "Content-type": "application/json",
+      },
     }
-  })
+  );
   if (response.status < 400) {
     let data = await response.json();
     return data.data;
@@ -207,7 +229,7 @@ export async function generatePaymentJson(paymentRequest) {
   let response = await fetch(paymentUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(paymentRequest)
+    body: JSON.stringify(paymentRequest),
   });
   if (response.status < 500) {
     let result = await response.json();
@@ -218,7 +240,7 @@ export async function generatePaymentJson(paymentRequest) {
         key: payment_obj.key,
         redirect_url: payment_obj.redirect_url,
         kind: PAYMENT_KIND,
-        js_script: payment_obj.js_script
+        js_script: payment_obj.js_script,
       };
       if (PAYMENT_KIND === "paystack") {
         user_details = { ...user_details, ...processor_button_info };
@@ -228,7 +250,7 @@ export async function generatePaymentJson(paymentRequest) {
           email: processor_button_info.customer_email,
           first_name: processor_button_info.customer_firstname,
           last_name: processor_button_info.customer_lastname,
-          phone_number: processor_button_info.customer_phone
+          phone_number: processor_button_info.customer_phone,
         };
       }
       return {
@@ -241,10 +263,59 @@ export async function generatePaymentJson(paymentRequest) {
           description: processor_button_info.custom_description,
           title: processor_button_info.custom_title,
           meta: processor_button_info.meta || [],
-          user_details
-        }
+          user_details,
+        },
       };
     }
     return result;
   }
+}
+
+export async function findTutorByEmail(payload: {
+  email: string;
+  default_subject?: string;
+}) {
+  let response = await postHelper(
+    `${HOST}/new-flow/admin/search/single`,
+    payload
+  );
+  if (response.ok) {
+    let data = await response.json();
+    return data.data;
+  }
+  throw new Error("Error from backend server");
+}
+
+export async function allJobApplicants(slug: string) {
+  let response = await fetch(`${HOST}/new-flow/admin/search/${slug}/applied`);
+  if (response.ok) {
+    let { data } = await response.json();
+    return data;
+  }
+  throw new Error("Error from backend server");
+}
+
+export async function addTutorsToPool(
+  slug,
+  payload: {
+    budget: number;
+    applicants: Array<{
+      tutor_slug: string;
+      default_subject: string;
+      cost: number;
+      lessons: number;
+      lessonFee: number;
+    }>;
+    send_profile?: boolean;
+  }
+) {
+  let response = await postHelper(
+    `${HOST}/new-flow/admin/update-request-pool/${slug}`,
+    payload
+  );
+  if (response.ok) {
+    let { data } = await response.json();
+    return data;
+  }
+  throw new Error("Error from backend server");
 }
