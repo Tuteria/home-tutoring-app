@@ -1,8 +1,8 @@
 import React from "react";
 import AdminSearchPage from "@tuteria/shared-lib/src/new-request-flow/pages/AdminSearchPage";
-import adapter from "../../server_utils/client";
+import adapter from "../../../server_utils/client";
 import { AdminSearchStore } from "@tuteria/shared-lib/src/stores";
-import serverAdapter from "../../server_utils/server";
+import serverAdapter from "../../../server_utils/server";
 import { observer } from "mobx-react-lite";
 import { useEffect } from "react";
 
@@ -33,20 +33,13 @@ const AdminSearch: React.FC<{
 );
 
 export async function getServerSideProps({ params }) {
-  let [regions, countries, supportedCountries, payload] = await Promise.all([
-    serverAdapter.getRegions(),
-    serverAdapter.getCountries(),
-    serverAdapter.getSupportedCountries(),
-    serverAdapter.getRequestInfoForSearch(params.slug),
-  ]);
+  if (params.slug === "false") {
+    throw new Error("Not found");
+  }
+  let payload = await serverAdapter.getAdminRequestInfo(params.slug);
 
   return {
-    props: {
-      regions,
-      countries,
-      supportedCountries,
-      payload,
-    },
+    props: payload,
   };
 }
 

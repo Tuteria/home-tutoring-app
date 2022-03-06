@@ -1,3 +1,4 @@
+import { generateSplitRequest } from "@tuteria/shared-lib/src/home-tutoring/request-flow/request-fns";
 import storage, { isServer } from "@tuteria/shared-lib/src/local-storage";
 import sStorage from "@tuteria/shared-lib/src/storage";
 import { resolveCurrencyFromCountry } from "@tuteria/shared-lib/src/utils/hooks";
@@ -8,7 +9,7 @@ import {
   TUTORSEARCHRESULT_DATA_TRIMED,
 } from "../../../src/stories/new-request-flow/sampleData";
 import { usePrefetchHook } from "./util";
-import { trimSearchResult } from "./utils";
+import { trimSearchResult, createSearchFilter } from "./utils";
 
 const REGION_KEY = "TEST-REGIONS-VICINITIES";
 const COUNTRY_KEY = "TEST-COUNTRIES";
@@ -398,10 +399,20 @@ const clientAdapter = {
     throw "Error booking lessons";
     return [];
   },
-  saveRequestToServer: async (isAdmin, slug) => {
+  saveRequestToServer: async (isAdmin, slug, splitRequests) => {
     let requestData = storage.get(REQUEST_KEY, {});
     if (slug) {
       requestData.slug = slug;
+    }
+    if (splitRequests) {
+      let _sp = generateSplitRequest(
+        requestData.childDetails,
+        requestData.teacherKind
+      );
+      requestData.splitRequests = splitRequests.map((o, i) => ({
+        ...o,
+        ..._sp[i],
+      }));
     }
     if (!requestData.dateSubmitted) {
       requestData.dateSubmitted = new Date().toISOString();
@@ -517,56 +528,15 @@ const clientAdapter = {
     }
     throw "Error creating payment order";
   },
-  createSearchFilter(requestData, searchIndex = 0) {
-    let {
-      filters = {},
-      lessonDetails: { lessonSchedule },
-      teacherKind,
-    } = requestData;
-    const request = requestData.splitRequests[searchIndex];
-    let lessonDays = request.lessonDays || [];
-    if (lessonDays.length === 0) {
-      lessonDays = lessonSchedule.lessonDays;
-    }
-
-    const contactInfo = requestData.contactDetails;
-    // also send down the booking days and time for active bookings.
-    // get the regions that are related to the request region and then
-    // include tutors that fall in said region.
-    // active booking lessonDays filter would happen on the client.
-    // send down exam preparation expreience which tallies with the purpose from the request.
-    // send down lesson preference i.e max no of hours etc.
-    const searchFilters = {
-      searchSubject: request.searchSubject, // priority 1. tutor must have this subject if not then it is not part of the result.
-      subjectGroup: request.subjectGroup.join(","), // most of the subjects in subjectGroup
-      // teacherOption: request.teacherOption,
-      specialNeeds: request.specialNeeds.filter((x) => x !== "None").join(","),
-      curriculum: request.curriculum.join(","), // must have all the curriculum
-      class: request.class.join(","), // must have selected all the classes.
-      lessonDays: lessonDays.join(","), // tutors that are free on all of the lessonDays
-      lessonTime: lessonSchedule.lessonTime, // must be available at this time.
-      region: contactInfo.region,
-      state: contactInfo.state,
-      vicinity: contactInfo.vicinity,
-      country: contactInfo.country,
-      teacherKind,
-      searchIndex,
-    };
-    let lessonType =
-      requestData.lessonDetails.lessonType || filters?.lessonType;
-    if (lessonType == "online") {
-      delete searchFilters.region;
-    }
-    return searchFilters;
-  },
+  createSearchFilter,
   async initializeAdminSearch(slug) {
-      let response = await fetch(`/api/home-tutoring/search/${slug}`);
-      if (response.status < 400) {
-        let data = await response.json();
-        console.log("DATA!!!", data.data);
-        return data.data;
-      }
-      throw "Could not fetch saerch result";
+    // let response = await fetch(`/api/home-tutoring/search/${slug}`);
+    // if (response.status < 400) {
+    //   let data = await response.json();
+    //   console.log("DATA!!!", data.data);
+    //   return data.data;
+    // }
+    // throw "Could not fetch saerch result";
   },
   async getSearchResults(requestParameters: any) {
     let currentSearchData = TUTORSEARCHRESULT_DATA_TRIMED;
@@ -585,22 +555,24 @@ const clientAdapter = {
     currentIndex,
     requestData,
     specialities,
-    tutorPoolOnly
+    tutorPoolOnly,
+    searchData
   ) => {
-    let currentSearchData = TUTORSEARCHRESULT_DATA_TRIMED;
-    let searchObj = requestData.splitRequests[currentIndex];
-    let result = trimSearchResult(
-      currentSearchData,
-      [],
-      requestData,
-      searchObj,
-      specialities,
-      []
-    );
-    if (tutorPoolOnly) {
-      return result.slice(result.length - 4);
+    let _searchData = searchData;
+    if (!searchData) {
+      _searchData = createSearchFilter(requestData, currentIndex);
     }
-    return result;
+    let response = await postFetcher(`/api/home-tutoring/search`, {
+      requestData,
+      searchIndex: currentIndex,
+      searchData: _searchData,
+      tutorPoolOnly,
+    });
+    if (response.ok) {
+      let { data } = await response.json();
+      return data;
+    }
+    throw "Error fetching search result";
   },
   editTutorInfo: async (key: string, data: any) => {
     return "tutorToken";

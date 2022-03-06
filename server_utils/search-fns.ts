@@ -410,7 +410,6 @@ export function getRelevantScoreExcludingPrice(
     }
     if (tutor.workHistory.map((o) => o.isTeachingProfile).includes(true)) {
     }
-    console.log(tutor);
     return {
       ...tutor,
       rank: relevanceScore + requestRank || 0,

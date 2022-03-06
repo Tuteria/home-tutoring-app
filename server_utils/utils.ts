@@ -257,6 +257,7 @@ export function convertRequestToServerCompatibleFormat(
   }
   let tutorClass = rest.class
     .split(",")
+    .map((str) => str.replace(/\s+/g, " "))
     .map((o) => {
       let f = classGroup.find((j) => j.group.includes(o));
       return f?.name;
@@ -266,8 +267,8 @@ export function convertRequestToServerCompatibleFormat(
   let result = {
     ...rest,
     faculties,
-    searchSubject: tuteriaSearchSubject,
-    searchGroup: tuteriaSubjectGroup.join(","),
+    searchSubject: tuteriaSearchSubject || searchSubject,
+    searchGroup: tuteriaSubjectGroup.join(",") || subjectGroup,
     state,
     lessonTime,
     class: tutorClass.join(","),

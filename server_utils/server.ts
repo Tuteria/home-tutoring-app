@@ -168,7 +168,8 @@ async function getAcademicDataWithRadiusInfo() {
 async function saveParentRequest(
   requestData,
   paymentInfo,
-  send_notice = false
+  send_notice = false,
+  isAdmin = false
 ) {
   // need to reduce the information sent to the django server.
   requestData.splitRequests = requestData.splitRequests.map((o) => ({
@@ -179,11 +180,12 @@ async function saveParentRequest(
     let result = await updateCompletedRequest(
       requestData,
       paymentInfo, //temporarily ensure the status is only on issued
-      send_notice
+      send_notice,
+      isAdmin
     );
     return result;
   }
-  return await saveCompletedRequest(requestData);
+  return await saveCompletedRequest(requestData, isAdmin);
 }
 
 const serverAdapter = {
@@ -268,11 +270,17 @@ const serverAdapter = {
     return data;
   },
 
-  async saveParentRequest(requestData, paymentInfo, notifyTutors = false) {
+  async saveParentRequest(
+    requestData,
+    paymentInfo,
+    notifyTutors = false,
+    isAdmin
+  ) {
     let result = await saveParentRequest(
       requestData,
       paymentInfo,
-      notifyTutors
+      notifyTutors,
+      isAdmin
     );
     return result;
   },
@@ -397,7 +405,8 @@ const serverAdapter = {
   getQualifiedTutors: async (
     searchData,
     academicDataWithStateInfo,
-    returnSpeciality = false
+    returnSpeciality = false,
+    slug = ""
   ) => {
     let { state_with_radius, rawAcademicData, tutorCourses } =
       academicDataWithStateInfo;
@@ -414,7 +423,7 @@ const serverAdapter = {
     }
     result.radius = radius;
     try {
-      let response = await getTutorSearchResults(result, "post");
+      let response = await getTutorSearchResults(result, "post", slug);
       let transformed = convertServerResultToRequestCompatibleFormat(
         response,
         rawAcademicData,
@@ -463,7 +472,13 @@ const serverAdapter = {
       getTutorsInPool(slug),
     ]);
 
-    let { tutors: result, requestInfo, agent, split_count } = response;
+    let {
+      tutors: result,
+      requestInfo,
+      agent,
+      split_count,
+      serverInfo,
+    } = response;
     let firstSearch = this.transformSearch(
       result,
       academicDataWithStateInfo,
@@ -487,20 +502,23 @@ const serverAdapter = {
         tutors = firstSearch;
       }
     }
-    return { tutors, requestInfo, agent, firstSearch, split_count };
+    return { tutors, requestInfo, agent, firstSearch, split_count, serverInfo };
   },
   async buildSearchFilterAndFetchTutors(
     requestData,
     academicDataWithStateInfo,
     rank = false,
     index = 0,
-    includePending = false
+    includePending = false,
+    searchData,
+    tutorPoolOnly
   ) {
-    let searchData = createSearchFilter(requestData, index);
+    // let searchData = createSearchFilter(requestData, index);
     let result = await this.getQualifiedTutors(
       searchData,
       academicDataWithStateInfo,
-      true
+      true,
+      tutorPoolOnly ? requestData.slug : ""
     );
     if (rank) {
       return result;
@@ -517,7 +535,7 @@ const serverAdapter = {
       result.specialities,
       [],
       rank,
-      options
+      [options]
     );
   },
   async getSearchPageResult({ slug, requestObj, query, academicInfo }) {
@@ -679,38 +697,30 @@ const serverAdapter = {
   },
   getSupportedCountries,
   async getRequestInfoForSearch(slug?: string) {
-    const sampleAgent = {
-      name: "Benita",
-      phone_number: "+2349095121865",
-      email: "benita@tuteria.com",
-      image: "https://ik.im@agekit.io/gbudoh/Team_Photos/Benita_LzsSfrfW0.jpg",
-    };
+    let { agent, tutors, requestInfo, split_count, serverInfo } =
+      await this.getProfilesToBeSentToClient(slug, true);
     const { academicData } = await this.fetchAcademicData();
     return {
-      serverInfo: {
-        agent: sampleAgent,
-        created: "2021-12-10T09:18:05.415Z",
-        modified: "2021-12-10T09:18:05.415Z",
-        status: "pending",
-        tutorRequestInfo: SAMPLEREQUEST.splitRequests[0],
-        rawRequest: {
-          budget: 70000,
-          hourlyRate: 4000,
-        },
-      },
+      serverInfo: serverInfo,
       requestInfo: {
-        ...SAMPLEREQUEST,
-        childDetails: [SAMPLEREQUEST.childDetails[0]],
-        splitRequests: [SAMPLEREQUEST.splitRequests[0]],
+        ...requestInfo,
+        // splitRequests: [SAMPLEREQUEST.splitRequests[0]],
       },
       firstSearch: null,
-      tutors: [TUTORSEARCHRESULT_DATA[0]],
-      specialities: [
-        { key: "Primary Math", values: ["Engineering", "Sciences"] },
-      ],
+      tutors,
+      specialities: [],
       academicData: academicData,
-      agent: sampleAgent,
+      agent,
     };
+  },
+  async getAdminRequestInfo(slug: string) {
+    let [regions, countries, supportedCountries, payload] = await Promise.all([
+      this.getRegions(),
+      this.getCountries(),
+      this.getSupportedCountries(),
+      this.getRequestInfoForSearch(slug),
+    ]);
+    return { regions, countries, supportedCountries, payload };
   },
 };
 

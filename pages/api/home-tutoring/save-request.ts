@@ -25,7 +25,8 @@ export default defaultView(
     let result = await serverAdapter.saveParentRequest(
       requestData,
       paymentInfo,
-      true
+      true,
+      isAdmin
     );
     return result;
   },

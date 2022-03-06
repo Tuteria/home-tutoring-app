@@ -88,13 +88,13 @@ export async function getNeighboringArea(region) {
   throw new Error("Error from backend server");
 }
 
-export async function saveCompletedRequest(requestData) {
+export async function saveCompletedRequest(requestData, isAdmin) {
   let { slug } = requestData;
   let response = await fetch(
     `${HOST}/new-flow/save-home-tutoring-request/${slug}`,
     {
       method: "POST",
-      body: JSON.stringify({ requestData }),
+      body: JSON.stringify({ requestData, isAdmin }),
       headers: {
         "Content-type": "application/json",
       },
@@ -110,14 +110,15 @@ export async function saveCompletedRequest(requestData) {
 export async function updateCompletedRequest(
   requestData,
   paymentInfo,
-  new_pricing = false
+  new_pricing = false,
+  isAdmin = false
 ) {
   let { slug } = requestData;
   let response = await fetch(
     `${HOST}/new-flow/update-home-tutoring-request/${slug}`,
     {
       method: "POST",
-      body: JSON.stringify({ requestData, paymentInfo, new_pricing }),
+      body: JSON.stringify({ requestData, paymentInfo, new_pricing, isAdmin }),
       headers: {
         "Content-type": "application/json",
       },
@@ -130,21 +131,25 @@ export async function updateCompletedRequest(
   throw new Error("Error from backend server");
 }
 
-export async function getTutorSearchResults(searchParams, kind = "get") {
+export async function getTutorSearchResults(searchParams, kind = "get", slug) {
   let response = null;
-
-  if (kind == "post") {
-    response = await fetch(`${HOST}/new-flow/search`, {
-      method: "POST",
-      body: JSON.stringify(searchParams),
-      headers: {
-        "Content-type": "application/json",
-      },
-    });
+  if (slug) {
+    // fetch tutors who have already applied for this job.
+    response = await fetch(`${HOST}/new-flow/admin/search/${slug}/applied`);
   } else {
-    response = await fetch(
-      `${HOST}/new-flow/search?` + new URLSearchParams(searchParams)
-    );
+    if (kind == "post") {
+      response = await fetch(`${HOST}/new-flow/search`, {
+        method: "POST",
+        body: JSON.stringify(searchParams),
+        headers: {
+          "Content-type": "application/json",
+        },
+      });
+    } else {
+      response = await fetch(
+        `${HOST}/new-flow/search?` + new URLSearchParams(searchParams)
+      );
+    }
   }
   if (response.status < 400) {
     let data = await response.json();
