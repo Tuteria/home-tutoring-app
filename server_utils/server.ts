@@ -33,10 +33,6 @@ import {
   trimSearchResult,
 } from "./utils";
 
-import {
-  SAMPLEREQUEST,
-  TUTORSEARCHRESULT_DATA,
-} from "../../../src/stories/new-request-flow/sampleData";
 
 export const getCountryData = (_country) => {
   let country = _country;

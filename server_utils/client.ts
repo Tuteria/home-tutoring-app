@@ -4,10 +4,6 @@ import sStorage from "@tuteria/shared-lib/src/storage";
 import { resolveCurrencyFromCountry } from "@tuteria/shared-lib/src/utils/hooks";
 import jwt_decode from "jwt-decode";
 import { useEffect } from "react";
-import {
-  SAMPLEREQUEST,
-  TUTORSEARCHRESULT_DATA_TRIMED,
-} from "../../../src/stories/new-request-flow/sampleData";
 import { usePrefetchHook } from "./util";
 import { trimSearchResult, createSearchFilter } from "./utils";
 
@@ -539,17 +535,17 @@ const clientAdapter = {
     // throw "Could not fetch saerch result";
   },
   async getSearchResults(requestParameters: any) {
-    let currentSearchData = TUTORSEARCHRESULT_DATA_TRIMED;
-    let searchObj = SAMPLEREQUEST.splitRequests[0];
-    let result = trimSearchResult(
-      currentSearchData,
-      [],
-      SAMPLEREQUEST,
-      searchObj,
-      undefined,
-      []
-    );
-    return result;
+    // let currentSearchData = TUTORSEARCHRESULT_DATA_TRIMED;
+    // let searchObj = SAMPLEREQUEST.splitRequests[0];
+    // let result = trimSearchResult(
+    //   currentSearchData,
+    //   [],
+    //   SAMPLEREQUEST,
+    //   searchObj,
+    //   undefined,
+    //   []
+    // );
+    // return result;
   },
   fetchSearchResultFunc: async (
     currentIndex,
