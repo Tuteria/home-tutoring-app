@@ -280,10 +280,7 @@ export async function findTutorByEmail(payload: {
   email: string;
   default_subject?: string;
 }) {
-  let response = await postHelper(
-    `${HOST}/new-flow/admin/search/single`,
-    payload
-  );
+  let response = await postHelper(`/new-flow/admin/search/single`, payload);
   if (response.ok) {
     let data = await response.json();
     return data.data;
@@ -315,7 +312,7 @@ export async function addTutorsToPool(
   }
 ) {
   let response = await postHelper(
-    `${HOST}/new-flow/admin/update-request-pool/${slug}`,
+    `new-flow/admin/update-request-pool/${slug}`,
     payload
   );
   if (response.ok) {

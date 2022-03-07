@@ -37,7 +37,7 @@ const SelectedTutorPool: React.FC<{
   }
   return (
     <TutorSelectPage
-      store={store}
+      store={store as any}
       agent={agent}
       toNextPage={toNextPage}
       firstSearch={firstSearch}

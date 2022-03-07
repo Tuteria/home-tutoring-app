@@ -11,6 +11,7 @@ import {
 } from "@tuteria/tuteria-data/src";
 import {
   createPaymentOrder,
+  findTutorByEmail,
   generatePaymentJson,
   getNewRequestDetail,
   getSelectedTutorSearchData,
@@ -721,6 +722,10 @@ const serverAdapter = {
       this.getRequestInfoForSearch(slug),
     ]);
     return { regions, countries, supportedCountries, payload };
+  },
+  async singleSearchResult(payload) {
+    let result = await findTutorByEmail(payload);
+    return result[0];
   },
 };
 

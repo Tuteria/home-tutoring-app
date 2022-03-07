@@ -27,7 +27,8 @@ const AdminSearch: React.FC<{
       });
     }, []);
     return (
-      <AdminSearchPage store={store} agent={payload.agent} payload={payload} isEmptySearch/>
+      <div/>
+      // <AdminSearchPage store={store} agent={payload.agent} payload={payload} isEmptySearch/>
     );
   }
 );

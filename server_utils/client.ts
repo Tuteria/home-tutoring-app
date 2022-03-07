@@ -579,15 +579,15 @@ const clientAdapter = {
   },
   updateRequestParameters: async () => {},
   selectDefaultSubject: async (subject, userId) => {
-    return {
-      hourlyRate: 3500,
-      discountForExtraStudents: 60,
-      name: subject,
-      headline: `I teach ${subject} with practical/illustrative examples.`,
-      description: `I love ${subject} because I realized it is actually practical and it is a basis for every other course or subject which involves calculation.`,
-      related: [subject],
-      tuteriaName: subject,
-    };
+    let response = await postFetcher(
+      `/api/home-tutoring/select-default-subject`,
+      { subject, email: userId }
+    );
+    if (response.ok) {
+      let { data } = await response.json();
+      return data
+    }
+    throw "Could not get tutor data";
   },
 };
 
