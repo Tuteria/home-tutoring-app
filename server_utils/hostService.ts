@@ -309,10 +309,11 @@ export async function addTutorsToPool(
       lessonFee: number;
     }>;
     send_profile?: boolean;
+    split?: boolean;
   }
 ) {
   let response = await postHelper(
-    `new-flow/admin/update-request-pool/${slug}`,
+    `/new-flow/admin/update-request-pool/${slug}`,
     payload
   );
   if (response.ok) {

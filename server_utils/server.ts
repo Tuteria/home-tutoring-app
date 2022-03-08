@@ -1,3 +1,4 @@
+import { generateSplitRequest } from "@tuteria/shared-lib/src/home-tutoring/request-flow/request-fns";
 import { fetchGeneratedIpLocation } from "@tuteria/shared-lib/src/new-request-flow/components/LocationSelector/hook";
 import {
   fetchAcademicData,
@@ -10,6 +11,7 @@ import {
   getSupportedCountries,
 } from "@tuteria/tuteria-data/src";
 import {
+  addTutorsToPool,
   createPaymentOrder,
   findTutorByEmail,
   generatePaymentJson,
@@ -32,7 +34,6 @@ import {
   parseTransportData,
   trimSearchResult,
 } from "./utils";
-
 
 export const getCountryData = (_country) => {
   let country = _country;
@@ -195,7 +196,7 @@ const serverAdapter = {
   },
 
   getCountries: fetchAllCountries,
-  getRegions: async () => {
+  async getRegions() {
     let { regions } = await getLocationInfoFromSheet();
     return regions;
   },
@@ -273,13 +274,28 @@ const serverAdapter = {
     notifyTutors = false,
     isAdmin
   ) {
-    let result = await saveParentRequest(
-      requestData,
-      paymentInfo,
-      notifyTutors,
-      isAdmin
-    );
-    return result;
+    let promise = [
+      saveParentRequest(requestData, paymentInfo, notifyTutors, isAdmin),
+    ];
+    if (isAdmin) {
+      let payload = {
+        budget: paymentInfo.totalTuition,
+        applicants: paymentInfo.lessonPayments.map((lp) => {
+          return {
+            tutor_slug: lp.tutor.userId,
+            default_subject: lp.tutor.subject.name,
+            cost: lp.tutor.subject.hourlyRate,
+            lessons: lp.lessons,
+            lessonFee: lp.lessonFee,
+          };
+        }),
+        send_profile: notifyTutors,
+        split: requestData.splitRequests.length > 1,
+      };
+      promise = [addTutorsToPool(requestData.slug, payload)];
+    }
+    let result = await Promise.all(promise);
+    return result[0];
   },
 
   async checkAvailabilityOfTutors({
@@ -403,7 +419,8 @@ const serverAdapter = {
     searchData,
     academicDataWithStateInfo,
     returnSpeciality = false,
-    slug = ""
+    slug = "",
+    tutorPoolOnly
   ) => {
     let { state_with_radius, rawAcademicData, tutorCourses } =
       academicDataWithStateInfo;
@@ -420,7 +437,25 @@ const serverAdapter = {
     }
     result.radius = radius;
     try {
-      let response = await getTutorSearchResults(result, "post", slug);
+      let response;
+      if (tutorPoolOnly) {
+        response = await getTutorSearchResults(result, "post", slug);
+      } else {
+        if (slug) {
+          let payload = await Promise.all([
+            getTutorSearchResults(result, "post", ""),
+            getTutorSearchResults(result, "post", slug),
+          ]);
+          let responseObj = {};
+          let combined = [...payload[0], ...payload[1]];
+          combined.forEach((r) => {
+            responseObj[r.userId] = r;
+          });
+          response = Object.values(responseObj);
+        } else {
+          response = await getTutorSearchResults(result, "post", slug);
+        }
+      }
       let transformed = convertServerResultToRequestCompatibleFormat(
         response,
         rawAcademicData,
@@ -476,11 +511,14 @@ const serverAdapter = {
       split_count,
       serverInfo,
     } = response;
-    let firstSearch = this.transformSearch(
-      result,
-      academicDataWithStateInfo,
-      requestInfo
-    );
+    let splitRequests = [...requestInfo.splitRequests];
+    if (requestInfo.splitRequests.length === 0) {
+      splitRequests = generateSplitRequest(requestInfo.childDetails, "");
+    }
+    let firstSearch = this.transformSearch(result, academicDataWithStateInfo, {
+      ...requestInfo,
+      splitRequests,
+    });
     let tutors = [];
     // let tutorSelected = requestInfo.splitRequests
     if (firstSearch.length > 0) {
@@ -515,7 +553,8 @@ const serverAdapter = {
       searchData,
       academicDataWithStateInfo,
       true,
-      tutorPoolOnly ? requestData.slug : ""
+      requestData.slug,
+      tutorPoolOnly
     );
     if (rank) {
       return result;
@@ -694,8 +733,13 @@ const serverAdapter = {
   },
   getSupportedCountries,
   async getRequestInfoForSearch(slug?: string) {
-    let { agent, tutors, requestInfo, split_count, serverInfo } =
-      await this.getProfilesToBeSentToClient(slug, true);
+    let {
+      agent,
+      firstSearch: tutors,
+      requestInfo,
+      split_count,
+      serverInfo,
+    } = await this.getProfilesToBeSentToClient(slug, true);
     const { academicData } = await this.fetchAcademicData();
     return {
       serverInfo: serverInfo,
@@ -711,13 +755,16 @@ const serverAdapter = {
     };
   },
   async getAdminRequestInfo(slug: string) {
-    let [regions, countries, supportedCountries, payload] = await Promise.all([
-      this.getRegions(),
-      this.getCountries(),
-      this.getSupportedCountries(),
-      this.getRequestInfoForSearch(slug),
-    ]);
-    return { regions, countries, supportedCountries, payload };
+    // let [{ regions }, countries, supportedCountries, payload] =
+    //   await Promise.all([
+    //     getLocationInfoFromSheet(),
+    //     fetchAllCountries(),
+    //     getSupportedCountries(),
+    //     this.getRequestInfoForSearch(slug),
+    //   ]);
+    let payload = await this.getRequestInfoForSearch(slug);
+    return { payload };
+    // return { regions, countries, supportedCountries, payload };
   },
   async singleSearchResult(payload) {
     let result = await findTutorByEmail(payload);

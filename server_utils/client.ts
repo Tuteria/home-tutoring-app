@@ -5,7 +5,7 @@ import { resolveCurrencyFromCountry } from "@tuteria/shared-lib/src/utils/hooks"
 import jwt_decode from "jwt-decode";
 import { useEffect } from "react";
 import { usePrefetchHook } from "./util";
-import { trimSearchResult, createSearchFilter } from "./utils";
+import { createSearchFilter } from "./utils";
 
 const REGION_KEY = "TEST-REGIONS-VICINITIES";
 const COUNTRY_KEY = "TEST-COUNTRIES";
@@ -449,13 +449,6 @@ const clientAdapter = {
     let response = await postFetcher(`/api/home-tutoring/get-testimonials`, {
       slug: tutorId,
     });
-    // let response = await fetch(`/api/home-tutoring/get-testimonials`, {
-    //   method: "POST",
-    //   body: JSON.stringify({ slug: tutorId }),
-    //   headers: {
-    //     "Content-type": "application/json"
-    //   }
-    // });
     let result = await response.json();
     let ss = result.data;
     sStorage.set(key, ss);
@@ -489,12 +482,9 @@ const clientAdapter = {
     }
     throw "Could not verify payment";
   },
-  async onTutorsSelected(data, paymentInfo) {
+  async onTutorsSelected(data, paymentInfo, isAdmin, notifyTutors) {
     // let currentUser = this.getClientInfo();
-    let notifyTutors = true;
-    // if (currentUser.is_staff) {
-    //   notifyTutors = false;
-    // }
+
     let response = await postFetcher(`/api/home-tutoring/save-request`, {
       requestData: { ...data, pendingCompleteDate: new Date().toISOString() },
       paymentInfo: {
@@ -502,14 +492,15 @@ const clientAdapter = {
         timeSubmitted: new Date().toISOString(),
       },
       notifyTutors,
-      // isAdmin: currentUser.is_staff
+      isAdmin,
     });
     if (response.status < 400) {
       let result = await response.json();
       // if (result.data) {
       //   sessionS.set(`home-full-${result.slug}`, result.data);
       // }
-      return result.data.slug;
+      return;
+      // return result.data.slug;
     }
     throw "Error saving request on backend";
   },
@@ -526,26 +517,13 @@ const clientAdapter = {
   },
   createSearchFilter,
   async initializeAdminSearch(slug) {
-    // let response = await fetch(`/api/home-tutoring/search/${slug}`);
-    // if (response.status < 400) {
-    //   let data = await response.json();
-    //   console.log("DATA!!!", data.data);
-    //   return data.data;
-    // }
-    // throw "Could not fetch saerch result";
-  },
-  async getSearchResults(requestParameters: any) {
-    // let currentSearchData = TUTORSEARCHRESULT_DATA_TRIMED;
-    // let searchObj = SAMPLEREQUEST.splitRequests[0];
-    // let result = trimSearchResult(
-    //   currentSearchData,
-    //   [],
-    //   SAMPLEREQUEST,
-    //   searchObj,
-    //   undefined,
-    //   []
-    // );
-    // return result;
+    let response = await fetch(`/api/home-tutoring/search/${slug}`);
+    if (response.status < 400) {
+      let { data } = await response.json();
+      console.log("DATA!!!", data.payload);
+      return data.payload;
+    }
+    throw "Could not fetch saerch result";
   },
   fetchSearchResultFunc: async (
     currentIndex,
@@ -581,7 +559,7 @@ const clientAdapter = {
     );
     if (response.ok) {
       let { data } = await response.json();
-      return data
+      return data;
     }
     throw "Could not get tutor data";
   },

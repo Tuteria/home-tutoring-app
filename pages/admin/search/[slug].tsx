@@ -16,15 +16,15 @@ const AdminSearch: React.FC<{
 }> = observer(
   ({ regions = [], countries = [], supportedCountries = [], payload }) => {
     useEffect(() => {
-      store.useRequestDataProps.lessonLocationStore.updateFields({
-        regions,
-        countries,
-      });
-      store.editTutorInfo.initWithStaticData({
-        regions,
-        countries: countries,
-        countriesSupported: supportedCountries,
-      });
+      // store.useRequestDataProps.lessonLocationStore.updateFields({
+      //   regions,
+      //   countries,
+      // });
+      // store.editTutorInfo.initWithStaticData({
+      //   regions,
+      //   countries: countries,
+      //   countriesSupported: supportedCountries,
+      // });
     }, []);
     return (
       <AdminSearchPage store={store} agent={payload.agent} payload={payload} />
