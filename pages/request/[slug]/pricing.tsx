@@ -24,14 +24,17 @@ const NewPricingPage = ({ pricingInfo, requestData, slug }) => {
     routes: ["/request/[slug]"],
   });
   React.useEffect(() => {
-    store.initializeClientRequest({
-      requestInfo: requestData,
-      tutorResponses: [],
-      pricingInfo,
-      bookingInfo: {},
-    });
-    // store.mapToStore(rO
-    setLoaded(true);
+    store
+      .initializeClientRequest({
+        requestInfo: requestData,
+        tutorResponses: [],
+        pricingInfo,
+        bookingInfo: {},
+      })
+      .then(() => {
+        // store.mapToStore(rO
+        setLoaded(true);
+      });
   }, []);
   console.log(store.clientRequest.pricingInfo);
   return loaded ? (

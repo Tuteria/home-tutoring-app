@@ -1,15 +1,14 @@
-import { OverlayRouter } from "@tuteria/shared-lib/src/components/OverlayRouter";
 import { LoadingStateForRequest } from "@tuteria/shared-lib/src/home-tutoring/request-flow/ParentFormPage";
-import { ClientRequestForm } from "@tuteria/shared-lib/src/home-tutoring/request-flow/ClientRequestForm";
-import { RequestFlowStore } from "@tuteria/shared-lib/src/home-tutoring/request-flow/store";
 import storage, { isServer } from "@tuteria/shared-lib/src/local-storage";
+import LessonDetailPage from "@tuteria/shared-lib/src/new-request-flow/pages/LessonDetailPage";
 import sessionS from "@tuteria/shared-lib/src/storage";
+import { SearchStore } from "@tuteria/shared-lib/src/stores";
 import { observer } from "mobx-react-lite";
 import React, { useEffect, useState } from "react";
 import adapter, { useAuhenticationWrapper } from "../../../server_utils/client";
 import serverAdapter from "../../../server_utils/server";
 
-const viewModel = RequestFlowStore.create({}, { adapter });
+const viewModel = SearchStore.create({}, { adapter });
 
 function getQueryVariable(variable) {
   var query = window.location.search.substring(1);
@@ -89,14 +88,6 @@ const useHometutoringRequestData = (store, academicData) => {
             }
             storage.set(adapter.requestKey, merged);
             setRequestData(_requestData);
-            // const academicData = storage.get(adapter.academicKey);
-            if (academicData) {
-              return store
-                .initializeRequestData(academicData, true)
-                .then(() => {
-                  setLoaded(true);
-                });
-            }
           } else {
             navigate(`/?msg=${msg}`);
           }
@@ -107,6 +98,7 @@ const useHometutoringRequestData = (store, academicData) => {
     loaded,
     navigate,
     discountFlag,
+    requestData,
     loadingText,
     completeLoading,
     setCompleteLoading,
@@ -122,6 +114,7 @@ const HomeTutoringRequestPage: React.FC<{
     navigate,
     discountFlag,
     loadingText,
+    requestData,
     completeLoading,
     setCompleteLoading,
   } = useHometutoringRequestData(viewModel, academicData);
@@ -130,7 +123,7 @@ const HomeTutoringRequestPage: React.FC<{
     storage.set(adapter.countryKey, countries);
   }, [regions.length, countries.length]);
 
-  if (completeLoading) {
+  if (completeLoading || academicData == undefined) {
     return <LoadingStateForRequest text={loadingText} />;
   }
   function onFormSubmit() {
@@ -139,7 +132,7 @@ const HomeTutoringRequestPage: React.FC<{
     // } else {
     sessionS.clear(`home-${viewModel.slug}`);
     viewModel
-      .saveRequestToServer()
+      .updateRequestInfo(false)
       .then(() => {
         navigate(`/request/${viewModel.slug}/pricing`);
       })
@@ -149,15 +142,14 @@ const HomeTutoringRequestPage: React.FC<{
     // }
   }
   return (
-    <OverlayRouter>
-      <ClientRequestForm
-        loaded={loaded}
-        discountFlag={discountFlag}
-        toggleSubmission={() => setCompleteLoading(true)}
-        onSubmit={onFormSubmit}
-        viewModel={viewModel}
-      />
-    </OverlayRouter>
+    <LessonDetailPage
+      requestInfo={requestData}
+      countries={countries}
+      regions={regions}
+      viewModel={viewModel}
+      onSubmit={onFormSubmit}
+      academicData={academicData}
+    />
   );
 });
 

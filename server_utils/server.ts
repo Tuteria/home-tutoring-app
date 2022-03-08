@@ -178,7 +178,7 @@ async function saveParentRequest(
     let result = await updateCompletedRequest(
       requestData,
       paymentInfo, //temporarily ensure the status is only on issued
-      send_notice,
+      true,
       isAdmin
     );
     return result;

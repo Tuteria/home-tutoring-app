@@ -138,6 +138,8 @@ const clientAdapter = {
     let response = await postFetcher(`/api/home-tutoring/save-request`, {
       requestData,
       paymentInfo,
+      isAdmin: false,
+      notifyTutors: false,
     });
     if (response.status < 400) {
       let { data } = await response.json();
