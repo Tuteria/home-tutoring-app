@@ -32,7 +32,7 @@
     "jsonwebtoken": "^8.5.1",
     "jwt-decode": "^3.1.2",
     "next-pwa": "^5.2.23",
-    "@tuteria/shared-lib": "git+https://shared_token:ZY_2UskKCcprWpixb9Vc@gitlab.com/tuteria/v2/shared-lib.git#0.0.4q",
+    "@tuteria/shared-lib": "git+https://shared_token:ZY_2UskKCcprWpixb9Vc@gitlab.com/tuteria/v2/shared-lib.git#0.0.4r",
     "@tuteria/tuteria-data": "git+https://tuteria-data:sXyb-ixZzwjq7_7gX33p@gitlab.com/tuteria/v2/tuteria-data.git#0.0.2k",
     "next-transpile-modules": "git+https://github.com/gbozee/next-transpile-modules.git#2.3.2",
     "react": "^17.0.1",
