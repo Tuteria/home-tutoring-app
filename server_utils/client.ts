@@ -550,8 +550,16 @@ const clientAdapter = {
     }
     throw "Error fetching search result";
   },
-  editTutorInfo: async (key: string, data: any) => {
-    return "tutorToken";
+  editTutorInfo: async (data) => {
+    let response = await postFetcher(
+      "/api/home-tutoring/save-tutor-info",
+      data
+    );
+    if (response.ok) {
+      let { data } = await response.json();
+      return data;
+    }
+    throw "Could not save tutor data";
   },
   updateRequestParameters: async () => {},
   selectDefaultSubject: async (subject, userId) => {
