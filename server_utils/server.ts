@@ -10,6 +10,7 @@ import {
   getSearchConfig,
   getSupportedCountries,
 } from "@tuteria/tuteria-data/src";
+import saveTutorInfo from "../pages/api/home-tutoring/save-tutor-info";
 import {
   addTutorsToPool,
   createPaymentOrder,
@@ -20,8 +21,10 @@ import {
   getTutorSearchResults,
   getTutorsInPool,
   getTutorTestimonialAndCerfitications,
+  loginTutor,
   saveCompletedRequest,
   saveInitializedRequest,
+  saveTutorDetails,
   updateCompletedRequest,
   updatePaidRequest,
 } from "./hostService";
@@ -769,6 +772,63 @@ const serverAdapter = {
   async singleSearchResult(payload) {
     let result = await findTutorByEmail(payload);
     return result[0];
+  },
+  async saveTutorInfo({ key, slug, email, data }) {
+    const { tutorData, accessToken } = await loginTutor({ email });
+    let formattedData: any = {};
+    if (key === "personal-info") {
+      formattedData = {
+        personalInfo: { ...tutorData.personalInfo, ...data },
+      };
+    }
+    if (key === "payment-info") {
+      formattedData = {
+        paymentInfo: { ...tutorData.paymentInfo, ...data },
+      };
+    }
+    if (key === "schedule-info") {
+      formattedData = {
+        availability: {
+          ...tutorData.availability,
+          ...data,
+        },
+      };
+      delete formattedData.availability.availabilityStatus;
+      delete formattedData.availability.lastCalendarUpdate;
+      delete formattedData.availability.loading;
+    }
+    if (key === "location-info") {
+      const {
+        country,
+        state,
+        region,
+        vicinity,
+        address,
+        exemptedAreas,
+        lessonType,
+      } = data;
+      formattedData = {
+        personalInfo: {
+          ...tutorData.personalInfo,
+          country,
+          state,
+          region,
+          vicinity,
+          address,
+        },
+        availability: {
+          ...tutorData.availability,
+          exemptedAreas,
+          preferredLessonType: lessonType,
+        },
+      };
+    }
+
+    const result = await saveTutorDetails(
+      { data: formattedData, slug: tutorData.slug },
+      accessToken
+    );
+    return result;
   },
 };
 

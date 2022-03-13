@@ -1,6 +1,8 @@
 import { getCurrency } from "./utils";
 
 export let HOST = process.env.HOST_ENDPOINT || "http://backup.tuteria.com:8000";
+export let TUTOR_APP_ENDPOINT =
+  process.env.TUTOR_APP_ENDPOINT || "https://tutors.tuteria.com";
 
 async function postHelper(url, data, base = HOST) {
   const response = await fetch(`${base}${url}`, {
@@ -319,6 +321,41 @@ export async function addTutorsToPool(
   if (response.ok) {
     let { data } = await response.json();
     return data;
+  }
+  throw new Error("Error from backend server");
+}
+
+export async function loginTutor(payload: { email: string }) {
+  const response = await fetch(`${TUTOR_APP_ENDPOINT}/api/login`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-user": "admin" },
+    body: JSON.stringify(payload),
+  });
+  if (response.ok) {
+    let data = await response.json();
+    return data.data;
+  }
+  throw new Error("Error from backend server");
+}
+
+export async function saveTutorDetails(
+  payload: { slug: string; data: any },
+  token
+) {
+  const response = await fetch(
+    `${TUTOR_APP_ENDPOINT}/api/tutors/save-tutor-info`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+  if (response.ok) {
+    let data = await response.json();
+    return data.data;
   }
   throw new Error("Error from backend server");
 }
