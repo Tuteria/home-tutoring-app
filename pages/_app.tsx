@@ -5,6 +5,7 @@ import "katex/dist/katex.min.css";
 import Head from "next/head";
 import React from "react";
 import "react-phone-input-2/lib/style.css";
+import "keen-slider/keen-slider.min.css";
 require("react-dom");
 if (typeof window !== "undefined") {
   window.React2 = require("react");
