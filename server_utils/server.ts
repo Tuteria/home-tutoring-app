@@ -193,6 +193,8 @@ const serverAdapter = {
   createPaymentOrder,
   getAcademicDataWithRadiusInfo,
   getTutorsData,
+  getLocationInfoFromSheet,
+  fetchAllCountries,
   getRequestInfo: async (slug, withAgent?: any, as_parent = false) => {
     let result = await getNewRequestDetail(slug, withAgent, as_parent);
     return result;

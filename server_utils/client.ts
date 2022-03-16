@@ -519,7 +519,9 @@ const clientAdapter = {
   },
   createSearchFilter,
   async initializeAdminSearch(slug) {
-    let response = await fetch(`/api/home-tutoring/search/${slug}`);
+    let response = await fetch(
+      `/api/home-tutoring/search/${slug}?isAdmin=true`
+    );
     if (response.status < 400) {
       let { data } = await response.json();
       console.log("DATA!!!", data.payload);
