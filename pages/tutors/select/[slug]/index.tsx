@@ -35,6 +35,7 @@ const SelectedTutorPool: React.FC<{
   function toNextPage(params) {
     navigate(`/tutors/select/${store.slug}/${params}`);
   }
+  console.log({ agent, firstSearch, tutors, requestInfo });
   return (
     <TutorSelectPage
       store={store as any}
@@ -48,20 +49,23 @@ const SelectedTutorPool: React.FC<{
 };
 
 export async function getServerSideProps({ params, res }) {
-  let {
-    agent,
-    firstSearch = [],
-    tutors = [],
-    requestInfo,
-  } = await serverAdapter.getProfilesToBeSentToClient(params.slug);
-  return {
-    props: {
+  if (params.slug !== "false") {
+    let {
       agent,
-      firstSearch,
-      tutors,
+      firstSearch = [],
+      tutors = [],
       requestInfo,
-    },
-  };
+    } = await serverAdapter.getProfilesToBeSentToClient(params.slug);
+    return {
+      props: {
+        agent,
+        firstSearch,
+        tutors,
+        requestInfo,
+      },
+    };
+  }
+  return { props: {} };
 }
 
 export default SelectedTutorPool;

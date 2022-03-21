@@ -508,7 +508,6 @@ const serverAdapter = {
       getAcademicDataWithRadiusInfo(),
       getTutorsInPool(slug),
     ]);
-
     let {
       tutors: result,
       requestInfo,
