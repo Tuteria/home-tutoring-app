@@ -20,8 +20,9 @@ export function createSearchFilter(requestData, searchIndex = 0) {
     lessonDetails: { lessonSchedule },
     teacherKind,
   } = requestData;
-  const request = requestData.splitRequests[searchIndex];
-  let lessonDays = request.lessonDays || [];
+  let request = requestData.splitRequests[searchIndex];
+ 
+  let lessonDays = request?.lessonDays || [];
   if (lessonDays.length === 0) {
     lessonDays = lessonSchedule.lessonDays;
   }

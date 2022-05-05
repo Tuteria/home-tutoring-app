@@ -503,7 +503,11 @@ const serverAdapter = {
       {}
     );
   },
-  async getProfilesToBeSentToClient(slug, returnSpeciality = false) {
+  async getProfilesToBeSentToClient(
+    slug,
+    returnSpeciality = false,
+    isAdmin = false
+  ) {
     let [academicDataWithStateInfo, response] = await Promise.all([
       getAcademicDataWithRadiusInfo(),
       getTutorsInPool(slug),
@@ -518,6 +522,7 @@ const serverAdapter = {
     let splitRequests = [...requestInfo.splitRequests];
     if (requestInfo.splitRequests.length === 0) {
       splitRequests = generateSplitRequest(requestInfo.childDetails, "");
+      requestInfo.splitRequests = splitRequests;
     }
     let firstSearch = this.transformSearch(result, academicDataWithStateInfo, {
       ...requestInfo,
@@ -540,6 +545,20 @@ const serverAdapter = {
       } else {
         tutors = firstSearch;
       }
+    }
+    if (isAdmin) {
+      let searchFilter = createSearchFilter(requestInfo, 0);
+      let searchResult = await this.buildSearchFilterAndFetchTutors(
+        requestInfo,
+        academicDataWithStateInfo,
+        false,
+        0,
+        false,
+        searchFilter,
+        false
+      );
+      tutors = tutors.length > 0 ? tutors : firstSearch;
+      firstSearch = searchResult;
     }
     return { tutors, requestInfo, agent, firstSearch, split_count, serverInfo };
   },
@@ -736,14 +755,9 @@ const serverAdapter = {
     throw "Could not verify payment";
   },
   getSupportedCountries,
-  async getRequestInfoForSearch(slug?: string) {
-    let {
-      agent,
-      firstSearch: tutors,
-      requestInfo,
-      split_count,
-      serverInfo,
-    } = await this.getProfilesToBeSentToClient(slug, true);
+  async getRequestInfoForSearch(slug?: string, isAdmin?: boolean) {
+    let { agent, tutors, firstSearch, requestInfo, split_count, serverInfo } =
+      await this.getProfilesToBeSentToClient(slug, true, isAdmin);
     const { academicData } = await this.fetchAcademicData();
     return {
       serverInfo: serverInfo,
@@ -751,7 +765,7 @@ const serverAdapter = {
         ...requestInfo,
         // splitRequests: [SAMPLEREQUEST.splitRequests[0]],
       },
-      firstSearch: null,
+      firstSearch,
       tutors,
       specialities: [],
       academicData: academicData,
@@ -766,7 +780,7 @@ const serverAdapter = {
     //     getSupportedCountries(),
     //     this.getRequestInfoForSearch(slug),
     //   ]);
-    let payload = await this.getRequestInfoForSearch(slug);
+    let payload = await this.getRequestInfoForSearch(slug, true);
     return { payload };
     // return { regions, countries, supportedCountries, payload };
   },
