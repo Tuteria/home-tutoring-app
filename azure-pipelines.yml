@@ -14,8 +14,8 @@ resources:
 variables:
   tag: '$(Build.BuildId)'
   gitlabhub: 'Gitlab Tuteria'
-  imageName: 'registry.gitlab.com/tuteria/v2/tutor-frontend-app/home-tutoring-application'
-  shortName: "tuteria/v2/tutor-frontend-app/home-tutoring-application"
+  imageName: 'registry.gitlab.com/tuteria/v2/home-tutoring-application'
+  shortName: "tuteria/v2/home-tutoring-application"
   YARN_CACHE_FOLDER: $(Pipeline.Workspace)/.yarn
 
 pool:
