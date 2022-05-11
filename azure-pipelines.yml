@@ -5,106 +5,24 @@
 
 trigger:
 - develop
+- master
 - feature/*
 - bug/*
 
 resources:
-- repo: self
-
-variables:
-  tag: '$(Build.BuildId)'
-  gitlabhub: 'Gitlab Tuteria'
-  imageName: 'registry.gitlab.com/tuteria/v2/home-tutoring-application'
-  shortName: "tuteria/v2/home-tutoring-application"
-  YARN_CACHE_FOLDER: $(Pipeline.Workspace)/.yarn
+# - repo: self
+  repositories: 
+    - repository: templates
+      type: git 
+      name: Tuteria/tuteria-deploy
+      ref: refs/heads/develop
 
 pool:
   vmImage: ubuntu-latest
 
 stages:
-- stage: Test
-  displayName: Run tests
-  jobs:
-  - job: Test
-    displayName: Test
-    pool:
-      vmImage: ubuntu-latest
-    steps:
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '14.x'
-      displayName: 'Install Node.js'
-
-    # - task: CopyFiles@2
-    #   inputs:
-    #     SourceFolder: 'production'
-    #     Contents: '.npmrc'
-    #     TargetFolder: '$(Build.SourcesDirectory)'
-    #     OverWrite: true
-
-    # - script: |
-    #     yarn install
-    #   displayName: 'yarn install dependencies'
-    - task: Cache@2
-      inputs:
-        key: '"yarn" | "$(Agent.OS)" | yarn.lock'
-        restoreKeys: |
-          yarn | "$(Agent.OS)"
-          yarn
-        path: $(YARN_CACHE_FOLDER)
-      displayName: Cache Yarn packages
-
-    - script: yarn --frozen-lockfile
-
-
-    - script: |
-        yarn test
-      displayName: 'yarn test'
-      
-  
-
-- stage: Deploy
-  displayName: Deploy App
-  jobs:
-  - job: Deploy
-    displayName: Deploy
-    pool:
-      vmImage: ubuntu-latest
-    steps:
-    - task: Docker@2 
-      displayName: Build an image
-      inputs:
-        command: build 
-        repository: $(imageName)
-        dockerfile: $(Build.SourcesDirectory)/Dockerfile
-        tags: |
-          $(tag)
-        buildContext: $(Build.SourcesDirectory)
-    - task: Docker@2
-      displayName: "Push image to gitlab"
-      inputs:
-        containerRegistry: |
-          $(gitlabhub)
-        repository: $(shortName)
-        command: push
-        tags: |
-          $(tag)
-
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '2.x'
-        addToPath: true
-        architecture: 'x64'
-      name: "pyTools"
-    - script: $(pyTools.pythonLocation)/bin/pip install fabric==1.14.1
-      displayName: Install Fabric for deployment.
-    
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '2.x'
-        architecture: 'x64'
-      displayName: Use cached Python for deployment.
-
-    - script: PRODUCTION_PASSWORD=$(prod_pasword) $(pyTools.pythonLocation)/bin/fab deploy_dev:build_no=$(tag)
-      displayName: deploy image with build_no $(tag)
-    
+- template: azure-templates/frontend-test-stage.yml@templates
+- template: azure-templates/frontend-deploy-stage.yml@templates
+  parameters:
+    short_name: "tuteria/v2/home-tutoring-application"
+    tag: $(Build.BuildId)
